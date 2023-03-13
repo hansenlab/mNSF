@@ -29,8 +29,8 @@ hmkw = {"figsize":(7,.9),"bgcol":"white","subplot_space":0.1,"marker":"s","s":10
 
 
 ## load functions for  mNSF package
-os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_rotate_regularSizeData_SSlayer_modZ_nSamples_memorySaving_byBatches')
-sys.path.append('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_rotate_regularSizeData_SSlayer_modZ_nSamples_memorySaving_byBatches')
+os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/mNSF')
+
 
 from utils import preprocess
 import numpy as np
@@ -118,8 +118,8 @@ from utils import training_ori
 
 
 ## load functions for one-sample NSF package
-os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_LukasData_sample2_3_qsub_fasterVersion_sub500_v2_topleft_500genes_layer1to4')
-sys.path.append('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_LukasData_sample2_3_qsub_fasterVersion_sub500_v2_topleft_500genes_layer1to4')
+os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/NSF')
+
 
 from utils import training
 
@@ -292,8 +292,8 @@ list_D__=[D1,D2,D3,D4]
 
 
 #################
-os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_rotate_regularSizeData_SSlayer_modZ_nSamples_memorySaving_byBatches')
-sys.path.append('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_rotate_regularSizeData_SSlayer_modZ_nSamples_memorySaving_byBatches')
+os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/mNSF')
+
 
 
 
@@ -384,8 +384,8 @@ Fplot = inpf12["factors"][:,[0,1,2,3,4,5,6]]
 
 ## plot the factors in the 2-dim space
 
-os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_rotate_regularSizeData_SSlayer_modZ_nSamples_memorySaving_byBatches')
-sys.path.append('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_rotate_regularSizeData_SSlayer_modZ_nSamples_memorySaving_byBatches')
+os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/mNSF')
+
 
 plt_pth="plot__fullData_50iterations_ind1"
 misc.mkdir_p(plt_pth)

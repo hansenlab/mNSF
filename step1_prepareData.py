@@ -24,8 +24,8 @@ hmkw = {"figsize":(7,.9),"bgcol":"white","subplot_space":0.1,"marker":"s","s":10
 
 
 #cwd = os.getcwd()
-os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_rotate_regularSizeData_SSlayer_modZ_nSamples_memorySaving_byBatches')
-sys.path.append('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_rotate_regularSizeData_SSlayer_modZ_nSamples_memorySaving_byBatches')
+os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/mNSF')
+
 
 from utils import preprocess
 
@@ -129,8 +129,8 @@ from utils import training_oneSample
 from utils import training_ori
 
 #cwd = os.getcwd()
-os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_LukasData_sample2_3_qsub_fasterVersion_sub500_v2_topleft_500genes_layer1to4')
-sys.path.append('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_LukasData_sample2_3_qsub_fasterVersion_sub500_v2_topleft_500genes_layer1to4')
+os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/NSF')
+
 
 from utils import preprocess,misc,training,visualize,postprocess
 
@@ -274,8 +274,8 @@ import random
 
 L = 7
 #cwd = os.getcwd()
-os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_LukasData_sample2_3_qsub_fasterVersion_sub500_v2_topleft_500genes_layer1to4')
-sys.path.append('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_LukasData_sample2_3_qsub_fasterVersion_sub500_v2_topleft_500genes_layer1to4')
+
+os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/NSF')
 from utils import preprocess
 
 from utils import preprocess,misc,training,visualize,postprocess
@@ -355,8 +355,8 @@ D4["Z"]=D4['X']
 ########################################################################################################################
 ########################################################################################################################
 
-os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_rotate_regularSizeData_SSlayer_modZ_nSamples_memorySaving_byBatches')
-sys.path.append('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/May6_2022_sNMF_2samples/nsf-paper-main_2samples_rotate_regularSizeData_SSlayer_modZ_nSamples_memorySaving_byBatches')
+os.chdir('/dcs04/legacy-dcs01-hansen/hansen_lab1/ywang/ST/mNSF')
+
 
 
 ###################
