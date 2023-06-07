@@ -1,15 +1,10 @@
-
-
-
 import sys
-
-
-dir_mNSF_functions='/dcs04/hansen/data/ywang/ST/mNSF_package/functions/'
-sys.path.append(dir_mNSF_functions)
+sys.path.append('../functions')
 import load_packages
+import pandas
+import os
 
-
-
+print(globals())
 ###############################################################################################################
 
 ###############################################################################################################
@@ -17,12 +12,11 @@ import load_packages
 
 ############## Data loading
 
-dpth='/dcs04/hansen/data/ywang/ST/data_10X_ST/mouse_Sagittal/put/'
-
+dpth='data'
 ## sample 1
 #ad = read_h5ad((dpth,"data_s1.h5ad"))
-Y=pd.read_csv(path.join(dpth,'Y_sample1_smallData.csv.csv')
-X=pd.read_csv(path.join(dpth,'X_sample1_smallData.csv.csv')
+Y = pandas.read_csv(os.path.join(dpth,'Y_sample1_smallData.csv'))
+X = pandas.read_csv(os.path.join(dpth,'X_sample1_smallData.csv'))
 X = preprocess.rescale_spatial_coords(X)
 X=X.to_numpy()
 
@@ -45,8 +39,8 @@ D1=D
 ## sample 2
 #ad = read_h5ad((dpth,"data_s2.h5ad"))
 ## sample 2
-Y=pd.read_csv(path.join(dpth,'Y_sample2_smallData.csv.csv')
-X=pd.read_csv(path.join(dpth,'X_sample2_smallData.csv.csv')
+Y=pd.read_csv(path.join(dpth,'Y_sample2_smallData.csv.csv'))
+X=pd.read_csv(path.join(dpth,'X_sample2_smallData.csv.csv'))
 X = preprocess.rescale_spatial_coords(X)
 X=X.to_numpy()
 
