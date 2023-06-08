@@ -1,31 +1,18 @@
 import sys
-sys.path.append('../functions')
-import load_packages
+sys.path.append('..')
+import mNSF
+from mNSF.NSF import preprocess
+
+from scanpy import read_h5ad
+from tensorflow.data import Dataset
+from os import path
 import pandas
 import os
-
-print(globals())
-###############################################################################################################
-
-###############################################################################################################
-
 
 ############## Data loading
 
 dpth='data'
-## sample 1
-#ad = read_h5ad((dpth,"data_s1.h5ad"))
-Y = pandas.read_csv(os.path.join(dpth,'Y_sample1_smallData.csv'))
-X = pandas.read_csv(os.path.join(dpth,'X_sample1_smallData.csv'))
-X = preprocess.rescale_spatial_coords(X)
-X=X.to_numpy()
-
-ad = AnnData(Y,obsm={"spatial":X})
-
-ad.layers = {"counts":ad.X.copy()} #store raw counts before normalization changes ad.X
-
-pp.normalize_total(ad, inplace=True, layers=None, key_added="sizefactor")
-pp.log1p(ad)
+ad = read_h5ad(path.join(dpth, 'data_s1.h5ad'))
 J = ad.shape[1]
 D,_ = preprocess.anndata_to_train_val(ad, layer="counts", train_frac=1.0,
                                       flip_yaxis=False)
@@ -37,20 +24,7 @@ D1=D
 
 
 ## sample 2
-#ad = read_h5ad((dpth,"data_s2.h5ad"))
-## sample 2
-Y=pd.read_csv(path.join(dpth,'Y_sample2_smallData.csv.csv'))
-X=pd.read_csv(path.join(dpth,'X_sample2_smallData.csv.csv'))
-X = preprocess.rescale_spatial_coords(X)
-X=X.to_numpy()
-
-ad = AnnData(Y,obsm={"spatial":X})
-
-ad.layers = {"counts":ad.X.copy()} #store raw counts before normalization changes ad.X
-
-pp.normalize_total(ad, inplace=True, layers=None, key_added="sizefactor")
-pp.log1p(ad)
-
+ad = read_h5ad(path.join(dpth, "data_s2.h5ad"))
 J = ad.shape[1]
 D,_ = preprocess.anndata_to_train_val(ad, layer="counts", train_frac=1.0,
                                       flip_yaxis=False)
@@ -61,72 +35,25 @@ N = X.shape[0]
 D2=D
 
 
-
-
-
-################################################################################################################
-################################################################################################################
-################################################################################################################
-##############
-# %% Initialize inducing poi_sz-constantnts
-
-
-##################################################################
-##################################################################
-
-##################################################################
-##################################################################
-################### split into batches
-##################################################################
-##################################################################
-
-
 nsample_=2
-
-
-
 
 # step1, create D12
 Ntr = D1["Y"].shape[0]
 Dtrain = Dataset.from_tensor_slices(D1)
 D1_train = Dtrain.batch(round(Ntr)+1)
-Ntr
 Ntr = D2["Y"].shape[0]
 Dtrain = Dataset.from_tensor_slices(D2)
 D2_train = Dtrain.batch(round(Ntr)+1)
-Ntr
-Ntr = D3["Y"].shape[0]
-
 
 D1["Z"]=D1['X']
 D2["Z"]=D2['X']
 
-
-
-
-###################################################################################################################################################################################################
-###################################################################################################################################################################################################
-###################################################################################################################################################################################################
-###################################################################################################################################################################################################
-###################################################################################################################################################################################################
-#cwd = os.getcwd()
-
-
-###################
-###################
-###################
-
-
-list_D__=[D1,D2,D3]
-
-
+list_D__=[D1,D2]
 
 fit1=pf_ori_mod.ProcessFactorization(J,L,D1['Z'],psd_kernel=ker,nonneg=True,lik="poi")
 fit2=pf_ori_mod.ProcessFactorization(J,L,D2['Z'],psd_kernel=ker,nonneg=True,lik="poi")
 
 
-#fit1.init_loadings(D["Y"],X=X,sz=D["sz"],shrinkage=0.3)
-#fit1.init_loadings(D1["Y"],X=X,sz=None,shrinkage=0.3)
 fit1.init_loadings(D1["Y"],X=D1['X'],sz=D1["sz"],shrinkage=0.3)
 fit2.init_loadings(D2["Y"],X=D2['X'],sz=D2["sz"],shrinkage=0.3)
 

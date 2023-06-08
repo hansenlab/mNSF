@@ -3,7 +3,7 @@
 """
 (spatial/temporal) Process Factorization base class
 
-@author: townesf
+@author: Yi Wang based on earlier work by Will Townes for the NSF package. 
 """
 import numpy as np
 import tensorflow as tf
@@ -15,8 +15,7 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
 
-from NSF import likelihoods
-from NSF import misc, nnfu
+from mNSF.NSF import likelihoods, misc, nnfu
 tfd = tfp.distributions
 tfb = tfp.bijectors
 tv = tfp.util.TransformedVariable

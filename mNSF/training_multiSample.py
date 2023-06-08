@@ -3,9 +3,7 @@
 """
 Classes and functions for training and saving models
 
-Created on Wed May 19 09:54:16 2021
-
-@author: townesf
+@author: Yi Wang based on earlier work by Will Townes for the NSF package. 
 """
 import pickle
 import pandas as pd
@@ -20,21 +18,16 @@ import numpy as np
 import tensorflow as tf
 from time import time,process_time
 from contextlib import suppress
-#from shutil import rmtree
 from tempfile import TemporaryDirectory
-#from scipy.linalg import norm
-#from scipy.stats import pearsonr,linregress
 from os import path
 dtp = "float32"
-#dtp = "float16"
 
 ### check tv objects memory usage
 import tensorflow_probability as tfp
 tv = tfp.util.TransformedVariable
 tfb = tfp.bijectors
 
-
-from NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
+from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
 
 
 

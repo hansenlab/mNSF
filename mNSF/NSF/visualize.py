@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from contextlib import suppress
 
-from NSF.misc import poisson_deviance,dev2ss
+from mNSF.NSF.misc import poisson_deviance,dev2ss
 
 def heatmap(X,y,figsize=(6,4),bgcol="gray",cmap="turbo",**kwargs):
   fig,ax=plt.subplots(figsize=figsize)

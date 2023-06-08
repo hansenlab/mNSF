@@ -11,8 +11,8 @@ Created on Wed May 19 10:03:53 2021
 import numpy as np
 from copy import deepcopy
 from pandas import DataFrame
-from NSF.misc import t2np
-from NSF.nnfu import normalize_rows,normalize_cols
+from mNSF.NSF.misc import t2np
+from mNSF.NSF.nnfu import normalize_rows,normalize_cols
 
 def compare_loadings(W,Wtrue):
   W,_ = normalize_rows(W)

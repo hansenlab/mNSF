@@ -17,8 +17,8 @@ from scipy.special import logsumexp
 from tensorflow.linalg import matmul
 from sklearn.decomposition import TruncatedSVD
 
-from NSF import likelihoods
-from NSF import misc,nnfu
+from mNSF.NSF import likelihoods
+from mNSF.NSF import misc,nnfu
 # from utils.postprocess import normalize_cols,shrink_nmf,balance_nonneg_components,interpret_nonneg
 
 tfd = tfp.distributions

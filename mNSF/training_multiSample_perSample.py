@@ -27,7 +27,7 @@ tv = tfp.util.TransformedVariable
 tfb = tfp.bijectors
 
 
-from NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
+from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
 
 
 

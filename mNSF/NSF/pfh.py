@@ -17,9 +17,9 @@ from tensorflow.linalg import matmul, matrix_transpose
 import tensorflow_probability as tfp
 tfd = tfp.distributions
 tfk = tfp.math.psd_kernels
-from NSF import nnfu
-from NSF.misc import t2np,reverse_normalization,params2key,dims_autocorr
-from NSF import cf,pf,likelihoods
+from mNSF.NSF import nnfu
+from mNSF.NSF.misc import t2np,reverse_normalization,params2key,dims_autocorr
+from mNSF.NSF import cf,pf,likelihoods
 dtp = "float32"
 
 class ProcessFactorizationHybrid(tf.Module):

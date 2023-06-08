@@ -46,10 +46,10 @@ from janitor import expand_grid
 import tensorflow_probability as tfp
 tfk = tfp.math.psd_kernels
 
-from NSF import pf,cf,pfh,mefisto
-from NSF import training,misc
-from NSF.preprocess import load_data
-from NSF.visualize import gof,get_sparsity
+from mNSF.NSF import pf,cf,pfh,mefisto
+from mNSF.NSF import training,misc
+from mNSF.NSF.preprocess import load_data
+from mNSF.NSF.visualize import gof,get_sparsity
 
 #file scheme for spatial models:
 #[dataset]/models/L[factors]/[likelihood]/[model]_[kernel]_M[inducing_pts]/epoch[epoch].pickle
