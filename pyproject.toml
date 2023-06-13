@@ -1,0 +1,58 @@
+[tool.poetry]
+authors = [
+    "Yi Wang <37149810+yiwang12@users.noreply.github.com>"
+]
+description = ""
+name = "mnsf"
+packages = [{ include = "mNSF" }]
+version = "0.0.1"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.11"
+numpy = "^1.22"
+matplotlib = "^3.7.1"
+pandas = "^2.0.2"
+scanpy = "^1.9.3"
+anndata = "^0.9.1"
+dill = "^0.3.6"
+squidpy = "^1.2.3"
+tensorflow-probability = "^0.20.1"
+
+[tool.bandit]
+exclude = "test"
+skips = ["B101", "B404", "B603", "B607"]
+targets = "src"
+
+[tool.black]
+line-length = 110
+target-version = ['py310']
+
+[tool.pyright]
+pythonVersion = "3.10"
+reportMissingTypeStubs = false
+reportPrivateUsage = false
+reportPropertyTypeMismatch = false
+reportUnknownArgumentType = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUntypedFunctionDecorator = false
+reportUnusedImport = false
+reportUnknownLambdaType = false
+reportUnusedVariable = "warning"
+typeCheckingMode = "strict"
+
+[tool.isort]
+line_length = 110
+profile = "black"
+py_version = 310
+
+[tool.pytest.ini_options]
+log_cli = 1
+# log_cli_level = "DEBUG"
+minversion = "7.0"
+testpaths = ["test"]
+

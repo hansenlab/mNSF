@@ -1,0 +1,18 @@
+name: mnsf
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.10
+  - anndata
+  - matplotlib
+  - numpy
+  - pandas
+  - pip
+  - scanpy
+  - squidpy
+  - tensorflow
+  - tensorflow-probability
+  - pip:
+      - -e .
