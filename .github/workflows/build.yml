@@ -1,4 +1,4 @@
-name: Run Data prep
+name: pip install & test
 
 on:
   push:
