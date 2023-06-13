@@ -1,3 +1,4 @@
+## single analysis script for Yi's steps 2-4
 
 # %%
 # KW move all imports to top
@@ -25,24 +26,37 @@ tfb = tfp.bijectors
 tfk = tm.psd_kernels
 ker = tfk.MaternThreeHalves
 
+## KW - Richard added check here
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+try:
+  tf.config.experimental.set_virtual_device_configuration(
+      tf.config.experimental.list_physical_devices('GPU')[0],[tf.config.experimental.VirtualDeviceConfiguration(memory_limit=16384)])
+except RuntimeError as e:
+  print(e)
+
 
 # %% 
 #### User inputs
 dpth="data"
 L = 5 # num patterns
 nsample = 4
-J=500
+J = 500
 nIter = 50
-run_ID = "KW_mouseSagittal_4samples" # to know what run our output is for
+nbatch_eachDim = 1 # KW - Yi defined this but never used?
 
-outDir = run_ID + "_out"
+run_ID = "KW_mouseSagittal_4samples_singleScript" # to know what run our output is for
+
+outDir = run_ID + "_out" # make output directory using the run ID
 misc.mkdir_p(outDir)
 
+mpth = path.join(outDir,"_models_mNSF_") # in Yi code but nothing saved here
+misc.mkdir_p(mpth)
 
-# %%
+
+
+# %%  ###### START STEP 2 ######
 #### Data loading
 # KW already saved annData objects in step1 -- no need to recreate
-# KW load in data same as in step2
 
 ## sample 1 
 ad = read_h5ad(os.path.join(dpth,"data_s1.h5ad"))
@@ -91,10 +105,12 @@ X = D["X"] #note this should be identical to Dtr_n["X"]
 N = X.shape[0]
 D4=D
 
-# %% Initialize inducing poi_sz-constantnts
-M = N #number of inducing points
 
-# step1, create D12
+# %% Initialize inducing poi_sz-constantnts
+
+M = N # KW number of inducing points equal to all points
+
+### KW batch size is entire dataset -- do we want to batch here?
 Ntr = D1["Y"].shape[0]
 Dtrain = Dataset.from_tensor_slices(D1)
 D1_train = Dtrain.batch(round(Ntr)+1)
@@ -112,51 +128,159 @@ Ntr = D4["Y"].shape[0]
 Dtrain = Dataset.from_tensor_slices(D4)
 D4_train = Dtrain.batch(round(Ntr)+1)
 
+
 D1["Z"]=D1['X']
 D2["Z"]=D2['X']
 D3["Z"]=D3['X']
 D4["Z"]=D4['X']
 
-
-# step2, initiate fit1, fit2 
 list_D__=[D1,D2,D3,D4]
-#del D1,D2,D3,D4,D5,D6,D7,D8,D9,D10,D11,D12
-#psutil.Process().memory_info().rss / (1024 * 1024 * 1024)
-
 list_Ds_train_batches_=[D1_train,D2_train,D3_train,D4_train]
 
-## KW added save_object funciton here from load_packages.py -- should abstract away (ask Yi if there is a preference where)
-def save_object(obj, filename):
-    with open(filename, 'wb') as outp:  # Overwrites any existing file.
-        pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
-
-# KW - why are we resaving each one?
-for kkk in range(0,nsample):
-            with open('list_para_'+ str(kkk+1) +'.pkl', 'rb') as inp:
-              list_para_tmp = pickle.load(inp)
-            save_object(list_para_tmp, os.path.join(outDir,'list_para_' + str(kkk+1) +'_' + run_ID + '.pkl'))# 50 iterations
 
 
-
-# hmkw = {"figsize":(7,.9),"bgcol":"white","subplot_space":0.1,"marker":"s","s":10}  KW unused - keep for plotting functions in future
-
-#list_fit__=[fit12,fit12,fit12,fit12,fit12,fit12,fit12,fit12,fit12,fit12,fit12,fit12]
-
-#%%
-# KW - why are we fitting each one individually again??
+# %%
+# KW fit each sample individually -- why? we overwrite the parameters later?
 fit1=pf.ProcessFactorization(J,L,D1['Z'],psd_kernel=ker,nonneg=True,lik="poi")
 fit2=pf.ProcessFactorization(J,L,D2['Z'],psd_kernel=ker,nonneg=True,lik="poi")
 fit3=pf.ProcessFactorization(J,L,D3['Z'],psd_kernel=ker,nonneg=True,lik="poi")
 fit4=pf.ProcessFactorization(J,L,D4['Z'],psd_kernel=ker,nonneg=True,lik="poi")
-
-
-#psutil.Process().memory_info().rss / (1024 * 1024 * 1024) # KW need to have this save somewhere instead of just printing it
 
 fit1.init_loadings(D1["Y"],X=D1['X'],sz=D1["sz"],shrinkage=0.3)
 fit2.init_loadings(D2["Y"],X=D2['X'],sz=D2["sz"],shrinkage=0.3)
 fit3.init_loadings(D3["Y"],X=D3['X'],sz=D3["sz"],shrinkage=0.3)
 fit4.init_loadings(D4["Y"],X=D4['X'],sz=D4["sz"],shrinkage=0.3)
 
+
+# KW fit samples together
+##could remove omega in this step
+fit12_=pf_multiSample.ProcessFactorization_fit12(J,L,
+  np.concatenate((D1['Z'], D2['Z'], D3['Z'], D4['Z']), axis=0),
+  nsample=nsample,
+  psd_kernel=ker,nonneg=True,lik="poi")
+
+fit12_.init_loadings(np.concatenate((D1['Y'], D2['Y'], D3['Y'], D4['Y']), axis=0),
+  list_X=[D1['X'], D2['X'], D3['X'], D4['X']],
+  list_Z=[D1['Z'],D2['Z'], D3['X'], D4['X']],
+  sz=np.concatenate((D1['sz'], D2['sz'], D3['sz'], D4['sz']), axis=0),shrinkage=0.3)
+
+
+# KW parse results and save to individual fits (why did we fit individually if overwriting here? are there other parameters learned?)
+M1_Z_=D1["Z"].shape[0]
+print(M1_Z_)
+M2_Z_=M1_Z_+D2["Z"].shape[0]
+M3_Z_=M2_Z_+D3["Z"].shape[0]
+M4_Z_=M3_Z_+D4["Z"].shape[0]
+
+M1_Y_=D1["Y"].shape[0]
+print(M1_Y_)
+M2_Y_=M1_Z_+D2["Y"].shape[0]
+M3_Y_=M2_Z_+D3["Y"].shape[0]
+M4_Y_=M3_Z_+D4["Y"].shape[0]
+
+delta1=fit12_.delta.numpy()[:,0:M1_Z_]
+beta01=fit12_.beta0.numpy()[0:L,:]
+beta1=fit12_.beta.numpy()[0:L,:]
+W=fit12_.W.numpy()
+
+delta2=fit12_.delta.numpy()[:,M1_Z_:M2_Z_]
+beta02=fit12_.beta0.numpy()[L:(2*L),:]
+beta2=fit12_.beta.numpy()[L:(2*L),:]
+
+delta3=fit12_.delta.numpy()[:,M2_Z_:M3_Z_]
+beta03=fit12_.beta0.numpy()[(2*L):(3*L),:]
+beta3=fit12_.beta.numpy()[(2*L):(3*L),:]
+
+delta4=fit12_.delta.numpy()[:,M3_Z_:M4_Z_]
+beta04=fit12_.beta0.numpy()[(3*L):(4*L),:]
+beta4=fit12_.beta.numpy()[(3*L):(4*L),:]
+
+fit1.delta.assign(delta1) #LxM
+fit1.beta0.assign(beta01) #LxM
+fit1.beta.assign(beta1) #LxM
+fit1.W.assign(W) #LxM
+
+fit2.delta.assign(delta2) #LxM
+fit2.beta0.assign(beta02) #LxM
+fit2.beta.assign(beta2) #LxM
+fit2.W.assign(W) #LxM
+
+fit3.delta.assign(delta3) #LxM
+fit3.beta0.assign(beta03) #LxM
+fit3.beta.assign(beta3) #LxM
+fit3.W.assign(W) #LxM
+
+fit4.delta.assign(delta4) #LxM
+fit4.beta0.assign(beta04) #LxM
+fit4.beta.assign(beta4) #LxM
+fit4.W.assign(W) #LxM
+
+# %%
+# KW eliminated duplicates
+
+## KW added save_object funciton here from load_packages.py -- should abstract away (ask Yi if there is a preference where)
+def save_object(obj, filename):
+    with open(filename, 'wb') as outp:  # Overwrites any existing file.
+        pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
+
+# KW changed training.store... to traning_multiSample.store... since error "module 'mNSF.NSF.training' has no attribute 'store_paras_from_tf_to_np'"
+kkk=0
+list_para_tmp=training_multiSample.store_paras_from_tf_to_np(fit1)
+save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
+list_para_tmp["Kuu_chol"].shape
+
+kkk=1
+list_para_tmp=training_multiSample.store_paras_from_tf_to_np(fit2)
+save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
+
+kkk=2
+list_para_tmp=training_multiSample.store_paras_from_tf_to_np(fit3)
+save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
+
+kkk=3
+list_para_tmp=training_multiSample.store_paras_from_tf_to_np(fit4)
+save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
+
+#%% ###### START STEP 3 #########
+# process factorization
+fit_ini=pf.ProcessFactorization(J,L,D1['Z'],psd_kernel=ker,nonneg=True,lik="poi")
+fit_ini.init_loadings(D1["Y"],X=D1['X'],sz=D1["sz"],shrinkage=0.3)
+
+picklePath = fit_ini.generate_pickle_path("constant",base=mpth) # renaming since we import pp package 
+misc.mkdir_p(picklePath)
+
+tro_ = training_multiSample_perSample.ModelTrainer(fit_ini,pickle_path=None)
+tro_ini = training.ModelTrainer(fit_ini,pickle_path=None)
+
+
+#%%
+for iter in range(0,nIter):
+	for ksample in range(0,nsample):
+              fit =tro_.train_model([tro_ini],ksample,list_Ds_train_batches_,list_D__)## 1 iteration of parameter updatings
+# KW note - this updates the list_para_#.pkl files , right??
+
+#%%
+######## START STEP 4 #########
+
+# KW - why are we resaving each one? just so we have saved output?
+for kkk in range(0,nsample):
+            with open('list_para_'+ str(kkk+1) +'.pkl', 'rb') as inp:
+              list_para_tmp = pickle.load(inp)
+            save_object(list_para_tmp, os.path.join(outDir,'list_para_' + str(kkk+1) +'_' + run_ID + '.pkl'))# 50 iterations
+
+
+#%%
+# KW - do we need to fit each one individually again?? I think we just overwrite them anyway
+
+#fit1=pf.ProcessFactorization(J,L,D1['Z'],psd_kernel=ker,nonneg=True,lik="poi")
+#fit2=pf.ProcessFactorization(J,L,D2['Z'],psd_kernel=ker,nonneg=True,lik="poi")
+#fit3=pf.ProcessFactorization(J,L,D3['Z'],psd_kernel=ker,nonneg=True,lik="poi")
+#fit4=pf.ProcessFactorization(J,L,D4['Z'],psd_kernel=ker,nonneg=True,lik="poi")
+
+#fit1.init_loadings(D1["Y"],X=D1['X'],sz=D1["sz"],shrinkage=0.3)
+#fit2.init_loadings(D2["Y"],X=D2['X'],sz=D2["sz"],shrinkage=0.3)
+#fit3.init_loadings(D3["Y"],X=D3['X'],sz=D3["sz"],shrinkage=0.3)
+#fit4.init_loadings(D4["Y"],X=D4['X'],sz=D4["sz"],shrinkage=0.3)
 
 #psutil.Process().memory_info().rss / (1024 * 1024 * 1024) # KW need to have this save somewhere instead of just printing it
 
@@ -175,14 +299,12 @@ for kkk in range(0,nsample):
 # %%
 
 ##### KW - ASK YI, WHAT IS THIS FOR? saves object and then immediately reloads it? 
-
 save_object(list_fit__, os.path.join(outDir, 'list_fit' + run_ID + '.pkl'))
 
 #with open('fit_threeSampleNSF_list_fit_L20_mouse_Sagittal_addmarkergenes_olfIncluded.pkl', 'rb') as inp:
 #	list_fit__ = pickle.load(inp)
 	
 	
-
 for kkk in range(0,nsample):
   fit_tmp=list_fit__[kkk]
   D_tmp=list_D__[kkk]
@@ -194,18 +316,6 @@ for kkk in range(0,nsample):
 
 ######################################################### factors
 list_X__=[D1["X"],D2["X"],D3["X"],D4["X"]]
-
-M1_Z_=D1["Z"].shape[0]
-M2_Z_=M1_Z_+D2["Z"].shape[0]
-M3_Z_=M2_Z_+D3["Z"].shape[0]
-M4_Z_=M3_Z_+D4["Z"].shape[0]
-
-
-M1_Y_=D1["Y"].shape[0]
-M2_Y_=M1_Z_+D2["Y"].shape[0]
-M3_Y_=M2_Z_+D3["Y"].shape[0]
-M4_Y_=M3_Z_+D4["Y"].shape[0]
-
 
   
 #%%
@@ -277,7 +387,7 @@ Fplot = inpf12["factors"][:, np.arange(L)]
 
 
 # save the loading of each gene into csv filr
-loadings=visualize.get_loadings(list_fit__[0])
+loadings=visualize.get_loadings(list_fit__[0]) # KW check all have same loadings?
 loadingsDF = pd.DataFrame(loadings) 
 # save the dataframe as a csv file
 loadingsDF.to_csv(os.path.join(outDir, "loadings_NPF_" + run_ID + ".csv"))
@@ -285,7 +395,7 @@ loadingsDF.to_csv(os.path.join(outDir, "loadings_NPF_" + run_ID + ".csv"))
 
 W = inpf12["loadings"]#*inpf["totals"][:,None]
 Wdf=pd.DataFrame(W*inpf12["totals1"][:,None], index=ad.var.index, columns=range(1,L+1))
-Wdf.to_csv(os.path.join(outDir, "loadings_NPF_spde" + run_ID + ".csv"))
+Wdf.to_csv(os.path.join(outDir, "loadings_NPF_spde" + run_ID + ".csv")) # KW question what is this
 
 
 DF = pd.DataFrame(Fplot[: M1_Y_,:]) 
@@ -303,3 +413,8 @@ DF.to_csv(os.path.join(outDir, "NPF_sample4_" + run_ID + ".csv"))
 
 
 # %%
+
+
+
+
+
