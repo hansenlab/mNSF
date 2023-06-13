@@ -12,7 +12,7 @@ dependencies:
   - pip
   - scanpy
   - squidpy
-  - tensorflow
+  - tensorflow-gpu
   - tensorflow-probability
   - pip:
       - -e .
