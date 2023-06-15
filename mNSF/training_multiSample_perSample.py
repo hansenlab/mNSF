@@ -1,10 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Classes and functions for training and saving models
 
-@author: Yi Wang based on earlier work by Will Townes for the NSF package. 
-"""
+
 import pickle
 import pandas as pd
 
@@ -18,23 +13,29 @@ import numpy as np
 import tensorflow as tf
 from time import time,process_time
 from contextlib import suppress
+#from shutil import rmtree
 from tempfile import TemporaryDirectory
+#from scipy.linalg import norm
+#from scipy.stats import pearsonr,linregress
 from os import path
 dtp = "float32"
+#dtp = "float16"
 
 ### check tv objects memory usage
 import tensorflow_probability as tfp
 tv = tfp.util.TransformedVariable
 tfb = tfp.bijectors
 
-from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
+
 from mNSF.NSF import training
+from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
 
 def train_model_mNSF(list_fit_,pickle_path_,
-        		list_Dtrain_,list_D_):
+        		list_Dtrain_,list_D_,niter_):
 	tro_ = ModelTrainer(list_fit_[0],pickle_path=pickle_path_)
 	tro_1 = training.ModelTrainer(list_fit_[0],pickle_path=pickle_path_)
-	tro_.train_model([tro_1],
+	for kiter in range(0,niter_):
+		fit =tro_.train_model([tro_1],
         		list_Dtrain_,list_D_)
 	nsample_=len(list_D_)
 	for k in range(0,nsample_):
@@ -48,8 +49,9 @@ def train_model_mNSF(list_fit_,pickle_path_,
 
 
 
-
 def assign_paras_from_np_to_tf(fit_, list_para):
+  print("assign_paras_from_np_to_tf-start")
+  print(tf.config.experimental.get_memory_info('GPU:0'))
   fit_.beta0.assign(list_para["beta0"])
   fit_.beta.assign(list_para["beta"])
   fit_.W.assign(list_para["W"])
@@ -57,37 +59,30 @@ def assign_paras_from_np_to_tf(fit_, list_para):
   fit_.amplitude.assign(list_para["amplitude"])
   fit_.length_scale.assign(list_para["length_scale"])
   fit_._ls0=list_para["_ls0"]
+  print("assign_paras_from_np_to_tf-_ls0")
+  print(tf.config.experimental.get_memory_info('GPU:0'))
   #fit_.scale_diag.assign(list_para["scale_diag"])
   del fit_.Omega_tril
   del fit_.delta
   with tf.name_scope("variational"):
-      #self.delta = tf.Variable(rng.normal(size=(L,M)), dtype=dtp, name="mean") #LxM
-      #tf.assign(fit_.delta, list_para["delta"], validate_shape=False)
-      #tf.reshape(fit12.delta, fit12.delta[1:10].shape)
-      #fit12.delta = tf.Variable(fit12.delta,shape=tf.TensorShape(None), dtype=dtp, name="mean") #LxM
-      #fit12.delta = tf.Variable(fit12.delta, dtype=dtp, name="mean") #LxM
-      #fit12.delta.assign(fit12.delta[1:10])
       fit_.delta = tf.Variable(list_para["delta"], dtype=dtp, name="mean") #LxM
-      #fit12.Omega_tril=tv(fit12.delta.numpy()[1:2,1:2], tfb.FillScaleTriL(),shape=tf.TensorShape(None), dtype=dtp, name="covar_tril")
-      #fit12.Omega_tril.assign(fit12.delta.numpy()[1:3,1:3])
-      #fit12.Omega_tril=tv(fit12.Omega_tril, tfb.FillScaleTriL(),shape=(3,3), dtype=dtp, name="covar_tril")
-      #fit12.Omega_tril.numpy()  
-      #tf.reshape(fit12.Omega_tril,[9])
       fit_.Omega_tril=tv(list_para["Omega_tril"], tfb.FillScaleTriL(), dtype=dtp, name="covar_tril") #LxMxM #don't need this in the initialization
-      #print(fit_.delta)
-      #print(fit_.Omega_tril)
   del fit_.Kuu_chol
-  #print("assign_paras")
-  #print(list_para["Kuu_chol"].shape)
-  #fit_.Kuu_chol = tf.Variable(list_para["Kuu_chol"], dtype=dtp, name="Variable:0", trainable=False)#don't need this in the initialization
+  print("assign_paras_from_np_to_tf-variational")
+  print(tf.config.experimental.get_memory_info('GPU:0'))
   fit_.Kuu_chol = tf.Variable(fit_.eval_Kuu_chol(fit_.get_kernel()), dtype=dtp, trainable=False)#don't need this in the initialization
-  #stuff to facilitate caching
-  #for i in fit_.trainable_variables:
-  #  print(i.name)
+  for i in fit_.trainable_variables:
+    print(i.name)
+  print("assign_paras_from_np_to_tf-Kuu_chol")
+  print(tf.config.experimental.get_memory_info('GPU:0'))
   del fit_.trvars_kernel
   del fit_.trvars_nonkernel
+  print("assign_paras_from_np_to_tf-del trvars_nonkernel")
+  print(tf.config.experimental.get_memory_info('GPU:0'))
   fit_.trvars_kernel = tuple(i for i in fit_.trainable_variables if i.name[:10]=="gp_kernel/")
   fit_.trvars_nonkernel = tuple(i for i in fit_.trainable_variables if i.name[:10]!="gp_kernel/")
+  print("assign_paras_from_np_to_tf-trvars_nonkernel")
+  print(tf.config.experimental.get_memory_info('GPU:0'))
   del fit_.kernel
   if fit_.isotropic:
     fit_.kernel = fit_.psd_kernel(amplitude=fit_.amplitude, length_scale=fit_.length_scale)
@@ -197,22 +192,6 @@ class ModelTrainer(object): #goal to change this to tf.module?
     self.set_pickle_path(pickle_path)
     self.converged=False
 
-  # def reset(self,lr_reduce=0.5):
-  #   """
-  #   Reset everything and decrease the learning rate
-  #   """
-  #   self.loss = {"train":[np.nan],"val":[np.nan]}
-  #   self.model.reset()
-  #   cfg = self.optimizer.get_config()
-  #   cfg["learning_rate"]*=lr_reduce
-  #   self.optimizer = tf.optimizers.Adam.from_config(cfg)
-  #   cfg_k = self.optimizer_k.get_config()
-  #   cfg_k["learning_rate"]*=lr_reduce
-  #   self.optimizer_k = tf.optimizers.Adam.from_config(cfg_k)
-  #   self.epoch.assign(0)
-  #   self.ptime.assign(0.0)
-  #   self.wtime.assign(0.0)
-  #   self.converged=False
 
   def multiply_lr(self,factor):
     lr = self.optimizer.learning_rate
@@ -266,7 +245,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
       fname = "converged.pickle"
     return unpickle_from_file(path.join(pth,fname))
 
-  def _train_model_fixed_lr(self, list_self,list_D, list_D__, ckpt_mgr,Dval=None, #Ntr=None,  
+  def _train_model_fixed_lr(self, list_self,kk_,list_D, list_D__, ckpt_mgr,Dval=None, #Ntr=None,  
                             S=3,
                            verbose=True,num_epochs=500,
                            ptic = process_time(), wtic = time(), ckpt_freq=50,
@@ -291,12 +270,12 @@ class ModelTrainer(object): #goal to change this to tf.module?
     #print("self.model.beta0_1")
     #print(self.model.beta0_1)# it looks fins here
     #print("self.model.beta0_1")
-    #num_epochs=5000####modified
+    #num_epochs=1####modified
     #num_epochs=5000####modified
     ptic,wtic = self.checkpoint(ckpt_mgr, process_time()-ptic, time()-wtic)
-    #print("num_epochs")
-    #print(num_epochs)
-    #print(type(num_epochs))
+    print("num_epochs")
+    print(num_epochs)
+    print(type(num_epochs))
     self.loss["train"] = rpad(self.loss["train"],num_epochs+1)
     if pickle_freq is None: #only pickle at the end
       pickle_freq = num_epochs
@@ -314,10 +293,10 @@ class ModelTrainer(object): #goal to change this to tf.module?
     # def train_step_nochol(D):
     #   return self.model.train_step(D, self.optimizer, self.optimizer_k,
     #                                S=S, Ntot=Ntr, chol=False)
-    #print(12300)
+    print(12300)
     #print(self.model.beta0_1[1])
     #print(self.model.W[1,1])
-    #print(12300)
+    print(12300)
     #@tf.function
     #def train_step(list_self, list_D, chol=True):
     #  # if chol: return train_step_chol(D)
@@ -332,31 +311,37 @@ class ModelTrainer(object): #goal to change this to tf.module?
       chol=(self.epoch % kernel_hp_update_freq==0)
       trl=0.0
       nsample=len(list_D)
+      print("before training paras")
+      print(tf.config.experimental.get_memory_info('GPU:0'))
       #for kkk in range(0,nsample):
       #  with open('tro_'+ str(kkk+1) +'.pkl', 'rb') as inp:
       #    list_self[kkk].model = pickle.load(inp)
-      for kkk in range(0,nsample):
-        #list_self[kkk]
-        #print(kkk)
-        with open('list_para_'+ str(kkk+1) +'.pkl', 'rb') as inp:
-          list_para_tmp = pickle.load(inp)
-        list_self[0].model.Z=list_D__[kkk]["Z"]
-        #print("self_epoch_numpy")
-        #print(list_self[0].model.Z.shape)
-        #$print(self.epoch.numpy())
-        #if self.epoch.numpy()==0 and kkk==0:
-        #  W_new=list_para_tmp["W"]
-        #if self.epoch.numpy()>0 OR kkk>0:
-        #list_para_tmp["W"]=W_new
-        for D in list_D[kkk]: #iterate through each of the batches ####???????!!!!!!!
-          #epoch_loss.update_state(train_step(D,chol=chol)) # perform one training step for each bath, #assume all batches shares the same parameters (? mean?)   
-          #print(psutil.Process().memory_info().rss / (1024 * 1024 * 1024))
-          #print(list_para_tmp["Kuu_chol"].shape)
+      #kk_
+      #for kkk in range(0,nsample):
+      kkk=kk_
+      for kkk in [kk_]:
+      	list_self[0].model.Z=list_D__[kkk]["Z"]
+      	print(kkk)
+      	print("before loading paras")
+      	print(tf.config.experimental.get_memory_info('GPU:0'))
+      	with open('list_para_'+ str(kkk+1) +'.pkl', 'rb') as inp:
+      	    list_para_tmp = pickle.load(inp)
+      	print("after loading paras")
+      	print(tf.config.experimental.get_memory_info('GPU:0'))
+      	print("self_epoch_numpy")
+      	#print(list_self[0].model.Z.shape)
+      	print(self.epoch.numpy())
+      	#if self.epoch.numpy()==0 and kkk==0:
+      	#  W_new=list_para_tmp["W"]
+      	#if self.epoch.numpy()>0 OR kkk>0:
+      	#list_para_tmp["W"]=W_new
+      	for D in list_D[kkk]: #iterate through each of the batches ####???????!!!!!!!
+          print(list_para_tmp["Kuu_chol"].shape)
           assign_paras_from_np_to_tf(list_self[0].model,list_para_tmp)
-          #print("after assigning paras")
-          #print(tf.config.experimental.get_memory_info('GPU:0'))
-          #print("training_Kuu_chol_dim")#(7, 4384, 4384)
-          #print(list_self[0].model.Kuu_chol.shape)
+          print("after assigning paras")
+          print(tf.config.experimental.get_memory_info('GPU:0'))
+          print("training_Kuu_chol_dim")#(7, 4384, 4384)
+          print(list_self[0].model.Kuu_chol.shape)
           del list_para_tmp
           #del list_self[0].model.Z
           #print("Zshape")
@@ -364,49 +349,46 @@ class ModelTrainer(object): #goal to change this to tf.module?
           #print(list_self[0].model.Z.shape)
           aa=list_self[0].model.train_step( D, list_self[0].optimizer, list_self[0].optimizer_k,
                                    Ntot=list_self[0].model.delta.shape[1], chol=True)
-          #print(psutil.Process().memory_info().rss / (1024 * 1024 * 1024))
+          print(psutil.Process().memory_info().rss / (1024 * 1024 * 1024))
           epoch_loss.update_state(aa)
-          del aa
           trl = trl + epoch_loss.result().numpy()
-          #print("after training paras")
-          #print(tf.config.experimental.get_memory_info('GPU:0'))
-          #print("trl")
-          #print(trl)
+          print("after training paras")
+          print(tf.config.experimental.get_memory_info('GPU:0'))
+          print("trl")
+          print(trl)
           list_para_tmp=store_paras_from_tf_to_np(list_self[0].model)
-          #print("after storing paras")
-          #print(tf.config.experimental.get_memory_info('GPU:0'))
-          #W_new=list_para_tmp["W"]
+          print("after storing paras")
+          print(tf.config.experimental.get_memory_info('GPU:0'))
+          W_new=list_para_tmp["W"]
           save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
       ## calculate the updated W by getting the average of W across all n samples
       #kkk=0
-      W_new = list_para_tmp["W"] - list_para_tmp["W"]
-      #del list_para_tmp
-      #print("W_new")
-      #print(W_new)
-      #print(list_para_tmp["W"])
+      W_new=list_para_tmp["W"] - list_para_tmp["W"]
       #W_new=W_new
+      print("before updationg W")
+      print(tf.config.experimental.get_memory_info('GPU:0'))
       for kkk in range(0,nsample):
         with open('list_para_'+ str(kkk+1) +'.pkl', 'rb') as inp:
           list_para_tmp = pickle.load(inp)
-        W_new = W_new + list_para_tmp['W'] / nsample
+          print("list_para_tmp=")
+          print(tf.config.experimental.get_memory_info('GPU:0'))
+        W_new=W_new+list_para_tmp['W'] / nsample
+        print("W_new")
+        print(tf.config.experimental.get_memory_info('GPU:0'))
       # assign the updated W to each of the model trainer object for each of the sample
       for kkk in range(0,nsample):
-        with open('list_para_'+ str(kkk+1) +'.pkl', 'rb') as inp:
-          list_para_tmp = pickle.load(inp)
-          list_para_tmp["W"]=W_new
-          save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
-          del list_para_tmp
-          #del W_new
+      	with open('list_para_'+ str(kkk+1) +'.pkl', 'rb') as inp:
+      	  list_para_tmp = pickle.load(inp)
+      	  list_para_tmp["W"]=W_new
+      	  save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
       #a=train_step(self, D1, D2, chol=chol)
       #epoch_loss.update_state(train_step(self, D1, D2, chol=chol))### this step has problems
       #for D in Dtrain: #iterate through each of the batches
       #  epoch_loss.update_state(train_step(D1, D2, chol=chol))
-      #print(12312312300)
-      #print(12312312300)
       self.epoch.assign_add(1)
       i = self.epoch.numpy()
-      #print("i")
-      #print(i)
+      print("i")
+      print(i)
       self.loss["train"][i] = trl
       if not np.isfinite(trl): ### modified
         raise NumericalDivergenceError###!!!NumericalDivergenceError
@@ -468,7 +450,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
     """
     return max(ckpt_freq*(self.epoch.numpy()//ckpt_freq - back), epoch0)
 
-  def train_model(self, list_self, list_D, list_D__, lr_reduce=0.5, maxtry=10, verbose=True,#*args,
+  def train_model(self, list_self, kk_, list_D, list_D__, lr_reduce=0.5, maxtry=10, verbose=True,#*args,
                   ckpt_freq=50, **kwargs):
     """
     See train_model_fixed_lr for args and kwargs. This method is a wrapper
@@ -485,7 +467,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
       mgr = tf.train.CheckpointManager(self.ckpt, directory=ckpth, max_to_keep=maxtry)
       while tries < maxtry:
         try:
-          self._train_model_fixed_lr(list_self,list_D, list_D__, mgr, #*args,
+          self._train_model_fixed_lr(list_self, kk_, list_D, list_D__, mgr, #*args,
                                       #ptic=ptic, wtic=wtic, 
                                      #verbose=verbose, 
                                      ckpt_freq=ckpt_freq,
@@ -505,12 +487,18 @@ class ModelTrainer(object): #goal to change this to tf.module?
           # self.reset(lr_reduce=lr_reduce)
           ptic,wtic = self.restore(ckpt)
           nsample=len(list_D__)
-          #print("nsample")
-          #print(nsample)
+          print("nsample")
+          print(nsample)
+          print("before storing paras")
+          print(tf.config.experimental.get_memory_info('GPU:0'))
           for kkk in range(0,nsample):
-            with open('list_para_'+ str(kkk+1) +'_restore.pkl', 'rb') as inp:
-              list_para_tmp = pickle.load(inp)
-            save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
+          	print(kkk)
+          	with open('list_para_'+ str(kkk+1) +'_restore.pkl', 'rb') as inp:
+          		list_para_tmp = pickle.load(inp)
+          		print("list_para_tmp = pickle.load(inp)")
+          		save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
+          		print("save_object")
+          		print(tf.config.experimental.get_memory_info('GPU:0'))
           lr_old,lr_new=self.multiply_lr(lr_reduce)
           if verbose:
             msg = "{:04d} learning rate: {:.2e}"
@@ -523,50 +511,3 @@ class ModelTrainer(object): #goal to change this to tf.module?
         print(msg+", reached maximum epochs.")
 
 
-# def check_convergence(x,epoch,tol=1e-4):
-#   """
-#   x: a vector of loss function values
-#   epoch: index of x with most recent loss
-#   """
-#   # with suppress(AttributeError):
-#   #   epoch = epoch.numpy()
-#   prev = x[epoch-1]
-#   return abs(x[epoch]-prev)/(0.1+abs(prev)) < tol
-
-# def check_convergence_linear(y,pval=.05):
-#   n = len(y)
-#   x = np.arange(n,dtype=y.dtype)
-#   x -= x.mean()
-#   yctr = y-y.mean()
-#   return linregress(x,y).pvalue>pval
-
-# def standardize(x,dtp="float64"):
-#   xm = x.astype(dtp)-x.mean(dtype=dtp)
-#   return xm/norm(xm)
-
-# def check_convergence_linear(y,z=None,tol=0.1):
-#   if z is None:
-#     z = standardize(np.arange(len(y)))
-#   # return abs(pearsonr(x,idx)[0])<tol
-#   return np.abs(np.dot(standardize(y),z))<tol
-
-# def check_convergence_posthoc(x,tol,method="linear",span=50):
-#   if method=="simple":
-#     start = 2
-#     f = lambda i: check_convergence(x,i,tol)
-#   elif method=="linear":
-#     start = span
-#     z=standardize(np.arange(span))
-#     f = lambda i: check_convergence_linear(x[(i-span+1):(i+1)],z=z,tol=tol)
-#   else:
-#     raise ValueError("method must be linear or simple")
-#   cc = np.tile([False],len(x))
-#   for i in range(start,len(x)):
-#     cc[i] = f(i)
-#   return cc
-
-# def update_time(t=None,chg=None):
-#   try:
-#     return t+chg
-#   except TypeError: #either t or chg is None
-#     return chg #note this may not be None if t is None but chg is not

@@ -16,10 +16,10 @@ from mNSF import process_multiSample
 from mNSF.NSF import preprocess
 from mNSF.NSF import misc
 #from mNSF.NSF import visualize
-from mNSF import training_multiSample
 
-from mNSF import process_multiSample
-from scanpy import read_h5ad
+
+from mNSF import training_multiSample
+#from scanpy import read_h5ad
 #from tensorflow.data import Dataset
 from os import path
 #import pandas

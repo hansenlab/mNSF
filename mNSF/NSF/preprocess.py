@@ -14,7 +14,11 @@ from math import ceil
 from copy import deepcopy
 from scipy import sparse
 from contextlib import suppress
-from scanpy import read_h5ad
+
+
+#from scanpy import read_h5ad ###----temp
+
+
 from tensorflow import constant
 from tensorflow.data import Dataset
 
