@@ -1,7 +1,7 @@
 
 
-dir_mNSF_functions=''
-dir_output=''
+dir_mNSF_functions='/users/ywang/Hansen_projects/scRNA/mNSFH_2023_06_14/mNSF-main'
+dir_output='/dcs04/hansen/data/ywang/ST/data_10X_ST/mouse_Sagittal_spaceRanger1_1_0/out/'
 
 ########################################################################
 ########################################################################
@@ -16,7 +16,7 @@ from mNSF import process_multiSample
 from mNSF.NSF import preprocess
 from mNSF.NSF import misc
 #from mNSF.NSF import visualize
-
+from mNSF.NSF import pf
 
 from mNSF import training_multiSample
 #from scanpy import read_h5ad
@@ -43,8 +43,13 @@ dpth='data'
 pth="/dcs04/hansen/data/ywang/ST/data_10X_ST/mouse_Sagittal_spaceRanger1_1_0/out/"
 mpth = path.join(pth,"models")
 misc.mkdir_p(mpth)
-pp = path.join(mpth,"pp")#list_fit[0].generate_pickle_path("constant",base=mpth)
+pp = path.join(mpth,"pp")
+
 misc.mkdir_p(pp)
+
+
+
+
 
 ########################################################################3
 ################### step 0  Data loading
@@ -69,7 +74,7 @@ list_sampleID=process_multiSample.get_listSampleID(list_D)
 ################### step 1 initialize model
 ########################################################################
 
-list_fit = process_multiSample.ini_multiSample(list_D,L)
+list_fit=process_multiSample.ini_multiSample(list_D,L)
 #indices=indices.astype(int)
 
 
@@ -78,7 +83,7 @@ list_fit = process_multiSample.ini_multiSample(list_D,L)
 ################### step 2 fit model
 ########################################################################
 
-training_multiSample.train_model_mNSF(list_fit,pp,list_Dtrain,list_D)
+list_fit=training_multiSample.train_model_mNSF(list_fit,pp,list_Dtrain,list_D)
 
 
 
