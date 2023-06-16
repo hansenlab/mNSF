@@ -21,7 +21,7 @@ from mNSF.NSF import misc
 #from mNSF import training_multiSample
 from mNSF import training_multiSample
 from mNSF import process_multiSample
-
+from mNSF.NSF import visualize
 
 #from tensorflow.data import Dataset
 
@@ -147,6 +147,17 @@ for k in range(0,nsample):
 
 
 #
+
+
+
+## plot the factors
+hmkw = {"figsize":(7,.9),"bgcol":"white","subplot_space":0.1,"marker":"s","s":10}
+for ksample in range(0,nsample):
+	indices=list_sampleID[k]
+	indices=indices.astype(int)
+	fig,axes=visualize.multiheatmap(list_D[ksample]["X"],Factors[indices,:], (1,L), cmap="Blues", **hmkw)
+	fig.savefig(path.join(dir_output,"sample"+str(ksample+1)+".png"),bbox_inches='tight')
+
 
 
 
