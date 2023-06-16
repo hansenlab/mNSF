@@ -9,7 +9,7 @@ import sys
 sys.path.append(dir_mNSF_functions)
 
 
-#import mNSF
+import mNSF
 
 from mNSF import process_multiSample
 
