@@ -43,7 +43,7 @@ nsample=2
 
 dpth='data'
 
-pth="/dcs04/hansen/data/ywang/ST/data_10X_ST/mouse_Sagittal_spaceRanger1_1_0/out/"
+pth=""
 mpth = path.join(pth,"models")
 misc.mkdir_p(mpth)
 pp = path.join(mpth,"pp")
