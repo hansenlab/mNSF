@@ -31,8 +31,8 @@ def get_D(X,Y):
 def get_listDtrain(list_D_):
 	list_Dtrain=list()
 	nsample=len(list_D_)
-	for kkk in range(0,nsample):
-		D=list_D_[kkk]
+	for ksample in range(0,nsample):
+		D=list_D_[ksample]
 		Ntr = D["Y"].shape[0]
 		Dtrain = Dataset.from_tensor_slices(D)
 		D_train = Dtrain.batch(round(Ntr)+1)
@@ -44,8 +44,8 @@ def get_listSampleID(list_D_):
 	list_sampleID=list()   
 	index_=0      
 	nsample=len(list_D_)                      
-	for kkk in range(0,nsample):
-		D=list_D_[kkk]
+	for ksample in range(0,nsample):
+		D=list_D_[ksample]
 		Ntr = D["Y"].shape[0]
 		list_sampleID.append(np.arange(index_,index_+Ntr))
 		index_=index_+Ntr
@@ -60,8 +60,8 @@ def ini_multiSample(list_D_,L_):
 	list_sampleID_=list()
 	nsample_=len(list_D_)
 	index__=0
-	for kkk in range(0,nsample_):
-		D=list_D_[kkk]
+	for ksample in range(0,nsample_):
+		D=list_D_[ksample]
 		list_X.append(D['X'])
 		list_Z.append(D['Z'])
 		Ntr = D["Y"].shape[0]
@@ -69,12 +69,12 @@ def ini_multiSample(list_D_,L_):
 		index__=index__+Ntr                                   
 	list_fit_=list()
 	J_=list_D_[0]["Y"].shape[1]
-	for k in range(0,nsample_):
-		D=list_D_[k]
+	for ksample in range(0,nsample_):
+		D=list_D_[ksample]
 		fit=pf.ProcessFactorization(J_,L_,D['Z'],psd_kernel=ker,nonneg=True,lik="poi")
 		fit.init_loadings(D["Y"],X=D['X'],sz=D["sz"],shrinkage=0.3)
 		list_fit_.append(fit)
-		if k==0:
+		if ksample==0:
 			X_concatenated=D['X']
 			Z_concatenated=D['Z']
 			Y_concatenated=D['Y']
@@ -92,23 +92,24 @@ def ini_multiSample(list_D_,L_):
   			list_X=list_X,
   			list_Z=list_Z,
   			sz=sz_concatenated,shrinkage=0.3)
-	for k in range(0,nsample_):
-		indices=list_sampleID_[k]
+	for ksample in range(0,nsample_):
+		indices=list_sampleID_[ksample]
 		#print("indices")
 		#print(indices)
 		indices=indices.astype(int)
 		#print(indices)
 		#print(fit12_.delta.numpy()[:,indices])
 		delta=fit12_.delta.numpy()[:,indices]
-		beta0=fit12_.beta0.numpy()[((k)*L_):((k+1)*L_),:]
-		beta=fit12_.beta.numpy()[((k)*L_):((k+1)*L_),:]
+		beta0=fit12_.beta0.numpy()[((ksample)*L_):((ksample+1)*L_),:]
+		beta=fit12_.beta.numpy()[((ksample)*L_):((ksample+1)*L_),:]
 		W=fit12_.W.numpy()
-		list_fit_[k].delta.assign(delta) 
-		list_fit_[k].beta0.assign(beta0)
-		list_fit_[k].beta.assign(beta) 
-		list_fit_[k].W.assign(W) 
+		list_fit_[ksample].delta.assign(delta) 
+		list_fit_[ksample].beta0.assign(beta0)
+		list_fit_[ksample].beta.assign(beta) 
+		list_fit_[ksample].W.assign(W) 
 		#list_para_tmp=training_multiSample.store_paras_from_tf_to_np(list_fit_[k])
-		save_object(list_fit_[k], 'fit_'+str(k+1)+'_restore.pkl')
+		save_object(list_fit_[ksample], 'fit_'+str(ksample+1)+'_restore.pkl')
+		#save_object(list_fit_[ksample], 'fit_'+str(ksample+1)+'.pkl')
 		#save_object(list_para_tmp, 'list_para_'+ str(k+1) +'.pkl')
 		#save_object(list_para_tmp, 'list_para_'+ str(k+1) +'_restore.pkl')
 	return list_fit_
@@ -127,16 +128,14 @@ def interpret_npf_v3(list_fit,list_X,S=10,**kwargs):
   X: spatial coordinates to predict on
   returns: interpretable loadings W, factors eF, and total counts vector
   """
-  kk=0
-  for fit_tmp in list_fit:
-    kk=kk+1
-  for kkk in range(0,kk):
-    Fhat_tmp = misc.t2np(list_fit[kkk].sample_latent_GP_funcs(list_X[kkk],S=S,chol=False)).T #NxL
-    if kkk==0:
+  nsample=len(list_fit)
+  for ksample in range(0,nsample):
+    Fhat_tmp = misc.t2np(list_fit[ksample].sample_latent_GP_funcs(list_X[ksample],S=S,chol=False)).T #NxL
+    if ksample==0:
       Fhat_c=Fhat_tmp
     else:
       Fhat_c=np.concatenate((Fhat_c,Fhat_tmp), axis=0)
-  return interpret_nonneg(np.exp(Fhat_c),list_fit[kkk].W.numpy(),sort=False,**kwargs)
+  return interpret_nonneg(np.exp(Fhat_c),list_fit[0].W.numpy(),sort=False,**kwargs)
 
 
 

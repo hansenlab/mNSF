@@ -33,15 +33,15 @@ from mNSF.NSF import training
 
 
 
-def train_model_mNSF(list_fit_,pickle_path_,
+def train_model_mNSF(fit0,pickle_path_,
         		list_Dtrain_,list_D_):
-	tro_ = ModelTrainer(list_fit_[0],pickle_path=pickle_path_)
+	tro_ = ModelTrainer(fit0,pickle_path=pickle_path_)
 	list_tro=list()   
 	nsample=len(list_D_)     
-	for k in range(0,nsample):
-		tro_tmp=training.ModelTrainer(list_fit_[k],pickle_path=pickle_path_)
-		list_tro.append(tro_tmp)
-	tro_.train_model(list_tro,
+	#for k in range(0,nsample):
+	#	tro_tmp=training.ModelTrainer(list_fit_[k],pickle_path=pickle_path_)
+	#	list_tro.append(tro_tmp)
+	tro_.train_model(
         		list_Dtrain_,list_D_)  
 	return list_fit_               
 	
@@ -203,7 +203,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
       fname = "converged.pickle"
     return unpickle_from_file(path.join(pth,fname))
 
-  def _train_model_fixed_lr(self, list_tro,list_Dtrain, list_D__, ckpt_mgr,Dval=None, #Ntr=None,  
+  def _train_model_fixed_lr(self,list_D, list_D__, ckpt_mgr,Dval=None, #Ntr=None,  
                             S=3,
                            verbose=True,num_epochs=500,
                            ptic = process_time(), wtic = time(), ckpt_freq=50,
@@ -236,38 +236,42 @@ class ModelTrainer(object): #goal to change this to tf.module?
     msg2 = "" #modified later to include rel_chg
     cvg = 0 #increment each time we think it has converged
     cc = ConvergenceChecker(span)
-    #epoch=0
     while (not self.converged) and (self.epoch < num_epochs):
       epoch_loss = tf.keras.metrics.Mean()
-      #epoch=epoch+1
-      #epoch=self.epoch 
       chol=(self.epoch % kernel_hp_update_freq==0)
       trl=0.0
-      nsample=len(list_Dtrain)
+      nsample=len(list_D)
       for ksample in range(0,nsample):
-        #print("before gc.collect()")
-        #print(tf.config.experimental.get_memory_info('GPU:0'))
+        print("before gc.collect()")
+        print(tf.config.experimental.get_memory_info('GPU:0'))
         gc.collect()
-        #print("after gc.collect()")
-        #print(tf.config.experimental.get_memory_info('GPU:0'))
-        #assign_para_fromFile_toModel(list_tro[0].model,ksample)
-        list_tro[ksample].model.Z=list_D__[ksample]["Z"]
-        #print("after list_tro[ksample].model.Z")
-        #print(tf.config.experimental.get_memory_info('GPU:0'))
-        Dtrain_ksample = list_Dtrain[ksample]
-        for D in Dtrain_ksample: #iterate through each of the batches 
+        print("after gc.collect()")
+        print(tf.config.experimental.get_memory_info('GPU:0'))
+        #assign_para_fromFile_toModel(list_self[0].model,ksample)
+        
+        print("after list_self[ksample].model.Z")
+        print(tf.config.experimental.get_memory_info('GPU:0'))
+        for D in list_D[ksample]: #iterate through each of the batches ####???????!!!!!!!
           print("before training paras")
           print(tf.config.experimental.get_memory_info('GPU:0'))
-          epoch_loss.update_state(list_tro[ksample].model.train_step( D, list_tro[ksample].optimizer, list_tro[ksample].optimizer_k,
-                                   Ntot=list_tro[ksample].model.delta.shape[1], chol=True))
+          #print("list_self[0].model.delta.shape")
+          #print(list_self[0].model.delta.shape)
+          with open('fit_'+ str(ksample+1) +'.pkl', 'rb') as inp:
+              fit_ksample = pickle.load(inp) 
+          if (self.epoch !=0) or (ksample!=0):
+          	fit_ksample.W.assign(W_updated)
+          fit_ksample.Z=list_D__[ksample]["Z"]
+          epoch_loss.update_state(fit_ksample.train_step( D, self.optimizer, self.optimizer_k,
+                                   Ntot=fit_ksample.delta.shape[1], chol=True))
           trl = trl + epoch_loss.result().numpy()
+          W_updated=fit_ksample.W
+          save_object(fit_ksample, 'fit_'+str(ksample+1)+'.pkl')
+          del fit_ksample
+          gc.collect()
           #print("trl")
           #print(trl)
           print("after training paras")
           print(tf.config.experimental.get_memory_info('GPU:0'))
-      W_updated=list_tro[ksample].model.W-list_tro[ksample].model.W
-      for ksample in range(0,nsample):
-      	W_updated = W_updated+ (list_tro[ksample].model.W / nsample)
       self.epoch.assign_add(1)
       i = self.epoch.numpy()
       self.loss["train"][i] = trl
@@ -332,7 +336,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
     """
     return max(ckpt_freq*(self.epoch.numpy()//ckpt_freq - back), epoch0)
 
-  def train_model(self, list_tro, list_Dtrain, list_D__, lr_reduce=0.5, maxtry=10, verbose=True,#*args,
+  def train_model(self, list_D, list_D__, lr_reduce=0.5, maxtry=10, verbose=True,#*args,
                   ckpt_freq=50, **kwargs):
     """
     See train_model_fixed_lr for args and kwargs. This method is a wrapper
@@ -349,7 +353,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
       mgr = tf.train.CheckpointManager(self.ckpt, directory=ckpth, max_to_keep=maxtry)
       while tries < maxtry:
         try:
-          self._train_model_fixed_lr(list_tro,list_Dtrain, list_D__, mgr, #*args,
+          self._train_model_fixed_lr(list_D, list_D__, mgr, #*args,
                                       #ptic=ptic, wtic=wtic, 
                                      #verbose=verbose, 
                                      ckpt_freq=ckpt_freq,
@@ -364,21 +368,17 @@ class ModelTrainer(object): #goal to change this to tf.module?
           if verbose:
             msg = "{:04d} numerical instability (try {:d})"
             print(msg.format(self.epoch.numpy(),tries))
-          #new_epoch = self.find_checkpoint(ckpt_freq, back=1, epoch0=epoch0) #int  #modofied
-          new_epoch=0
-          self.epoch.assign(0)#modofied
-          #new_epoch=0
-          #self.epoch=0
+          new_epoch = self.find_checkpoint(ckpt_freq, back=1, epoch0=epoch0) #int
           ckpt = path.join(ckpth,"ckpt-{}".format(new_epoch))
           # self.reset(lr_reduce=lr_reduce)
           ptic,wtic = self.restore(ckpt)
-          nsample=len(list_Dtrain)
+          nsample=len(list_D__)
           #print("nsample")
           #print(nsample)
           for ksample in range(0,nsample):
             with open('fit_'+ str(ksample+1) +'_restore.pkl', 'rb') as inp:
-              list_tro[ksample].model = pickle.load(inp)  
-            #save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
+              fit_ksample = pickle.load(inp)  
+            save_object(fit_ksample, 'fit_'+ str(ksample+1) +'.pkl')
           lr_old,lr_new=self.multiply_lr(lr_reduce)
           if verbose:
             msg = "{:04d} learning rate: {:.2e}"
