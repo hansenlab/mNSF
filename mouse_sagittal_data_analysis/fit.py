@@ -1,7 +1,7 @@
 
 
-dir_mNSF_functions='/users/ywang/Hansen_projects/scRNA/mNSFH_2023_06_14/mNSF-main'
-dir_output='/dcs04/hansen/data/ywang/ST/data_10X_ST/mouse_Sagittal_spaceRanger1_1_0/out/'
+dir_mNSF_functions='.../mNSF-main'
+dir_output=''
 
 ########################################################################
 ########################################################################
