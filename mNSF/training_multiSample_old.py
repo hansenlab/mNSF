@@ -21,7 +21,7 @@ from contextlib import suppress
 from tempfile import TemporaryDirectory
 from os import path
 dtp = "float32"
-import gc
+
 ### check tv objects memory usage
 import tensorflow_probability as tfp
 tv = tfp.util.TransformedVariable
@@ -30,21 +30,104 @@ tfb = tfp.bijectors
 from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
 from mNSF.NSF import training
 
-
-
-
 def train_model_mNSF(list_fit_,pickle_path_,
         		list_Dtrain_,list_D_):
-	tro_ = ModelTrainer(list_fit_,pickle_path=pickle_path_)
-	list_tro=list()   
-	nsample=len(list_D_)                      
-	for k in range(0,nsample):
-		tro_tmp=training.ModelTrainer(list_fit_[k],pickle_path=pickle_path_)
-		list_tro.append(tro_tmp)
-	tro_.train_model(list_tro,
-        		list_Dtrain_,list_D_)
+	#tro_ = ModelTrainer(list_fit_[0],pickle_path=pickle_path_)
+	tro_ = ModelTrainer(1,pickle_path=pickle_path_)
+	tro_1 = training.ModelTrainer(list_fit_[0],pickle_path=pickle_path_)
+	#tro_.train_model([tro_1],list_Dtrain_,list_D_)
+	tro_.train_model([tro_1],list_Dtrain_,list_D_)
+	nsample_=len(list_D_)
+	for k in range(0,nsample_):
+            with open('list_para_'+ str(k+1) +'.pkl', 'rb') as inp:
+              list_para_tmp = pickle.load(inp)
+            assign_paras_from_np_to_tf(list_fit_[k],list_para_tmp)
+            list_fit_[k].Z=list_D_[k]["Z"]
+            list_fit_[k].sample_latent_GP_funcs(list_D_[k]['X'],S=100,chol=True)
+	
 
 
+
+
+def assign_para_fromFile_toModel(model_,k):
+	with open('list_para_'+ str(k+1) +'.pkl', 'rb') as inp:
+          	list_para_tmp = pickle.load(inp)
+          	assign_paras_from_np_to_tf(model_,list_para_tmp)
+          	print("fit_.delta.shape")
+          	print(model_.delta.shape)
+          	return model_
+        	
+
+
+   	
+def update_para(model_,k):
+          	list_para_tmp=store_paras_from_tf_to_np(model_)
+          	save_object(list_para_tmp, 'list_para_'+ str(k+1) +'.pkl')
+
+
+
+def update_W(nsample):
+      ## calculate the updated W by getting the average of W across all n samples
+      kkk=0
+      with open('list_para_'+ str(kkk+1) +'.pkl', 'rb') as inp:
+          list_para_tmp = pickle.load(inp)
+      W_new = list_para_tmp["W"] - list_para_tmp["W"]
+      for kkk in range(0,nsample):
+        with open('list_para_'+ str(kkk+1) +'.pkl', 'rb') as inp:
+          list_para_tmp = pickle.load(inp)
+        W_new = W_new + list_para_tmp['W'] / nsample
+      # assign the updated W to each of the model trainer object for each of the sample
+      for kkk in range(0,nsample):
+        with open('list_para_'+ str(kkk+1) +'.pkl', 'rb') as inp:
+          list_para_tmp = pickle.load(inp)
+          list_para_tmp["W"]=W_new
+          save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
+
+
+
+def assign_paras_from_np_to_tf(fit_, list_para):
+  fit_.beta0.assign(list_para["beta0"])
+  fit_.beta.assign(list_para["beta"])
+  fit_.W.assign(list_para["W"])
+  fit_.nugget.assign(list_para["nugget"])
+  fit_.amplitude.assign(list_para["amplitude"])
+  fit_.length_scale.assign(list_para["length_scale"])
+  fit_._ls0=list_para["_ls0"]
+  #fit_.scale_diag.assign(list_para["scale_diag"])
+  del fit_.Omega_tril
+  del fit_.delta
+  with tf.name_scope("variational"):
+      fit_.delta = tf.Variable(list_para["delta"], dtype=dtp, name="mean") #LxM
+      fit_.Omega_tril=tv(list_para["Omega_tril"], tfb.FillScaleTriL(), dtype=dtp, name="covar_tril") #LxMxM #don't need this in the initialization
+  del fit_.Kuu_chol
+  fit_.Kuu_chol = tf.Variable(list_para["Kuu_chol"], dtype=dtp, name="Variable:0", trainable=False)#don't need this in the initialization
+  del fit_.trvars_kernel
+  del fit_.trvars_nonkernel
+  fit_.trvars_kernel = tuple(i for i in fit_.trainable_variables if i.name[:10]=="gp_kernel/")
+  fit_.trvars_nonkernel = tuple(i for i in fit_.trainable_variables if i.name[:10]!="gp_kernel/")
+  del fit_.kernel
+  if fit_.isotropic:
+    fit_.kernel = fit_.psd_kernel(amplitude=fit_.amplitude, length_scale=fit_.length_scale)
+  else:
+    fit_.kernel = tfk.FeatureScaled(fit_.psd_kernel(amplitude=fit_.amplitude), fit_.scale_diag)
+
+
+
+def store_paras_from_tf_to_np(fit_):
+      list_para={}
+      list_para["beta0"]=fit_.beta0.numpy()
+      list_para["beta"]=fit_.beta.numpy()
+      list_para["W"]=fit_.W.numpy()
+      list_para["nugget"]=fit_.nugget.numpy()
+      list_para["amplitude"]=fit_.amplitude.numpy()
+      list_para["length_scale"]=fit_.length_scale.numpy()
+      list_para["_ls0"]=fit_._ls0
+      list_para["Kuu_chol"]=fit_.Kuu_chol.numpy()
+      #list_para["scale_diag"]=fit_.scale_diag.numpy()
+      #self.Kuu_chol = tf.Variable(self.eval_Kuu_chol(self.get_kernel()), dtype=dtp, trainable=False)#don't need this in the initialization
+      list_para["Omega_tril"]=fit_.Omega_tril.numpy() #LxMxM #don't need this in the initialization
+      list_para["delta"]=fit_.delta.numpy()  #LxM
+      return list_para
 
 class NumericalDivergenceError(ValueError):
   pass
@@ -239,28 +322,20 @@ class ModelTrainer(object): #goal to change this to tf.module?
       trl=0.0
       nsample=len(list_D)
       for ksample in range(0,nsample):
-        gc.collect()
-        #assign_para_fromFile_toModel(list_self[0].model,ksample)
-        list_self[ksample].model.Z=list_D__[ksample]["Z"]
+        assign_para_fromFile_toModel(list_self[0].model,ksample)
+        list_self[0].model.Z=list_D__[ksample]["Z"]
         for D in list_D[ksample]: #iterate through each of the batches ####???????!!!!!!!
-          #print("before training paras")
-          #print(tf.config.experimental.get_memory_info('GPU:0'))
-          #print("list_self[0].model.delta.shape")
-          #print(list_self[0].model.delta.shape)
-          epoch_loss.update_state(list_self[ksample].model.train_step( D, list_self[ksample].optimizer, list_self[ksample].optimizer_k,
-                                   Ntot=list_self[ksample].model.delta.shape[1], chol=True))
+          print("before training paras")
+          print(tf.config.experimental.get_memory_info('GPU:0'))
+          print("list_self[0].model.delta.shape")
+          print(list_self[0].model.delta.shape)
+          epoch_loss.update_state(list_self[0].model.train_step( D, list_self[0].optimizer, list_self[0].optimizer_k,
+                                   Ntot=list_self[0].model.delta.shape[1], chol=True))
           trl = trl + epoch_loss.result().numpy()
-          #print("trl")
-          #print(trl)
-          #print("after training paras")
-          #print(tf.config.experimental.get_memory_info('GPU:0'))
-          #update_para(list_self[0].model,ksample)     
-      #update_W(nsample)
-      W_new = list_self[0].model.W - list_self[0].model.W
-      for ksample in range(0,nsample):
-      	W_new = W_new + list_self[ksample].model.W / nsample
-      for ksample in range(0,nsample):
-        list_self[ksample].model.W.assign(W_new)
+          print("after training paras")
+          print(tf.config.experimental.get_memory_info('GPU:0'))
+          update_para(list_self[0].model,ksample)     
+      update_W(nsample)
       self.epoch.assign_add(1)
       i = self.epoch.numpy()
       self.loss["train"][i] = trl
@@ -269,7 +344,6 @@ class ModelTrainer(object): #goal to change this to tf.module?
       #if not np.isfinite(trl) or trl>self.loss["train"][1]: ### modified
       #  raise NumericalDivergenceError###!!!NumericalDivergenceError
       if i%status_freq==0 or i==num_epochs:
-        print(tf.config.experimental.get_memory_info('GPU:0'))
         if Dval:
           val_loss = self.model.validation_step(Dval, S=S, chol=False).numpy()
           self.loss["val"][i] = val_loss
@@ -365,9 +439,9 @@ class ModelTrainer(object): #goal to change this to tf.module?
           #print("nsample")
           #print(nsample)
           for kkk in range(0,nsample):
-            with open('fit_'+ str(kkk+1) +'_restore.pkl', 'rb') as inp:
-              list_self[k].model = pickle.load(inp)  
-            #save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
+            with open('list_para_'+ str(kkk+1) +'_restore.pkl', 'rb') as inp:
+              list_para_tmp = pickle.load(inp)
+            save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
           lr_old,lr_new=self.multiply_lr(lr_reduce)
           if verbose:
             msg = "{:04d} learning rate: {:.2e}"

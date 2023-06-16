@@ -8,6 +8,8 @@ dir_output='/dcs04/hansen/data/ywang/ST/data_10X_ST/mouse_Sagittal_spaceRanger1_
 import sys
 sys.path.append(dir_mNSF_functions)
 
+#from scanpy import read_h5ad
+
 
 import mNSF
 
@@ -16,11 +18,13 @@ from mNSF import process_multiSample
 from mNSF.NSF import preprocess
 from mNSF.NSF import misc
 #from mNSF.NSF import visualize
+#from mNSF import training_multiSample
 from mNSF import training_multiSample
-
 from mNSF import process_multiSample
-#from scanpy import read_h5ad
+
+
 #from tensorflow.data import Dataset
+
 from os import path
 #import pandas
 import os
@@ -31,13 +35,27 @@ import sys
 import pickle
 
 
+import gc
+
 sys.path.append(dir_output)
+os.chdir(dir_output)
+
 
 
 ########################################################################
 ########################################################################
-L=6
-nsample=2
+L=12
+
+## nsample = 2:
+#worked on L12
+
+##nsample = 4:
+#not work on L=12 or 15: error shows in the 2nd iteration in gradient cal
+
+# put the par_storage into a function, so that the mem could be relived?
+
+
+nsample=4
 
 dpth='data'
 
@@ -46,6 +64,8 @@ mpth = path.join(pth,"models")
 misc.mkdir_p(mpth)
 pp = path.join(mpth,"pp")#list_fit[0].generate_pickle_path("constant",base=mpth)
 misc.mkdir_p(pp)
+
+
 
 ########################################################################3
 ################### step 0  Data loading
@@ -66,23 +86,38 @@ list_Dtrain=process_multiSample.get_listDtrain(list_D)
 list_sampleID=process_multiSample.get_listSampleID(list_D)
 
 
+
+
 ########################################################################3
 ################### step 1 initialize model
 ########################################################################
 
 list_fit = process_multiSample.ini_multiSample(list_D,L)
-#indices=indices.astype(int)
 
 
-########################################################################3
+########################################################################
 ################### step 2 fit model
 ########################################################################
-list_fit = training_multiSample.train_model_mNSF(list_fit,pp,
-        		list_Dtrain,list_D)
+
+gc.collect()
+
+
+
+training_multiSample.train_model_mNSF(list_fit,pp,list_Dtrain,list_D)
+
+gc.collect()
+
+
+#during traning:
+#print(tf.config.experimental.get_memory_info('GPU:0'))
+#{'current': 4684887040, 'peak': 29394932480}
 
 
 # save the fitted model
 process_multiSample.save_object(list_fit, 'list_fit.pkl') 
+
+gc.collect()
+
 
 ########################################################################3
 ################### step 3 save and plot results
@@ -103,7 +138,7 @@ Wdf.to_csv(path.join("loadings_spde.csv"))
 
 
 ## save the factors
-inpf12 = process_multiSample.interpret_npf_v3(list_fit,list_X,S=100,lda_mode=False)
+#inpf12 = process_multiSample.interpret_npf_v3(list_fit,list_X,S=100,lda_mode=False)
 Factors = inpf12["factors"][:,0:L]
 
 for k in range(0,nsample):
@@ -113,12 +148,7 @@ for k in range(0,nsample):
 	Factors_df.to_csv(path.join("factors_sample"+str(k+1)+".csv"))
 
 
-
-
-
-
-
-
+#
 
 
 

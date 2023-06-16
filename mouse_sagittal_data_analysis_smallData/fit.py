@@ -9,7 +9,7 @@ import sys
 sys.path.append(dir_mNSF_functions)
 
 
-import mNSF
+#import mNSF
 
 from mNSF import process_multiSample
 
@@ -32,7 +32,6 @@ import pickle
 
 
 sys.path.append(dir_output)
-
 
 ########################################################################
 ########################################################################
@@ -74,14 +73,15 @@ list_fit = process_multiSample.ini_multiSample(list_D,L)
 #indices=indices.astype(int)
 
 
+
 ########################################################################3
 ################### step 2 fit model
 ########################################################################
-list_fit = training_multiSample.train_model_mNSF(list_fit,pp,
-        		list_Dtrain,list_D)
+
+training_multiSample.train_model_mNSF(list_fit,pp,list_Dtrain,list_D)
 
 
-# save the fitted model
+
 process_multiSample.save_object(list_fit, 'list_fit_smallData.pkl') 
 
 ########################################################################3
@@ -117,6 +117,7 @@ for k in range(0,nsample):
 
 
 
+#'peak': 170529536}
 
 
 

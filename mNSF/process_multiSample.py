@@ -107,9 +107,10 @@ def ini_multiSample(list_D_,L_):
 		list_fit_[k].beta0.assign(beta0)
 		list_fit_[k].beta.assign(beta) 
 		list_fit_[k].W.assign(W) 
-		list_para_tmp=training_multiSample.store_paras_from_tf_to_np(list_fit_[k])
-		save_object(list_para_tmp, 'list_para_'+ str(k+1) +'.pkl')
-		save_object(list_para_tmp, 'list_para_'+ str(k+1) +'_restore.pkl')
+		#list_para_tmp=training_multiSample.store_paras_from_tf_to_np(list_fit_[k])
+		save_object(list_fit_[k], 'fit_'+str(k+1)+'_restore.pkl')
+		#save_object(list_para_tmp, 'list_para_'+ str(k+1) +'.pkl')
+		#save_object(list_para_tmp, 'list_para_'+ str(k+1) +'_restore.pkl')
 	return list_fit_
 
 
