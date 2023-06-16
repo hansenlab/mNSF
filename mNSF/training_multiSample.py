@@ -256,15 +256,15 @@ class ModelTrainer(object): #goal to change this to tf.module?
         #print(tf.config.experimental.get_memory_info('GPU:0'))
         Dtrain_ksample = list_Dtrain[ksample]
         for D in Dtrain_ksample: #iterate through each of the batches 
-          print("before training paras")
-          print(tf.config.experimental.get_memory_info('GPU:0'))
+          #print("before training paras")
+          #print(tf.config.experimental.get_memory_info('GPU:0'))
           epoch_loss.update_state(list_tro[ksample].model.train_step( D, list_tro[ksample].optimizer, list_tro[ksample].optimizer_k,
                                    Ntot=list_tro[ksample].model.delta.shape[1], chol=True))
           trl = trl + epoch_loss.result().numpy()
           #print("trl")
           #print(trl)
-          print("after training paras")
-          print(tf.config.experimental.get_memory_info('GPU:0'))
+          #print("after training paras")
+          #print(tf.config.experimental.get_memory_info('GPU:0'))
       W_updated=list_tro[ksample].model.W-list_tro[ksample].model.W
       for ksample in range(0,nsample):
       	W_updated = W_updated+ (list_tro[ksample].model.W / nsample)

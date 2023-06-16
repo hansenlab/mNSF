@@ -35,7 +35,6 @@ import sys
 import pickle
 
 
-import gc
 
 sys.path.append(dir_output)
 os.chdir(dir_output)
@@ -44,7 +43,7 @@ os.chdir(dir_output)
 
 ########################################################################
 ########################################################################
-L=15
+L=12
 
 ## nsample = 2:
 #worked on L12
@@ -93,8 +92,6 @@ list_sampleID=process_multiSample.get_listSampleID(list_D)
 ########################################################################3
 ################### step 1 initialize model
 ########################################################################
-print(tf.config.experimental.get_memory_info('GPU:0'))
-{'current': 24673792, 'peak': 24673792}
 
 list_fit = process_multiSample.ini_multiSample(list_D,L)
 
@@ -102,12 +99,6 @@ list_fit = process_multiSample.ini_multiSample(list_D,L)
 ########################################################################
 ################### step 2 fit model
 ########################################################################
-
-gc.collect()
-
-print(tf.config.experimental.get_memory_info('GPU:0'))
-{'current': 4504831232, 'peak': 7291089920}
-
 
 
 list_fit=training_multiSample.train_model_mNSF(list_fit,pp,list_Dtrain,list_D)
@@ -123,7 +114,7 @@ gc.collect()
 # save the fitted model
 process_multiSample.save_object(list_fit, 'list_fit.pkl') 
 
-gc.collect()
+
 
 
 ########################################################################3
