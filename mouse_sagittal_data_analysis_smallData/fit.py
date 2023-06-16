@@ -1,27 +1,17 @@
-
-
-dir_mNSF_functions='..'
-dir_output=''
-
-########################################################################
-########################################################################
+####### Imports #################################################################
 import sys
-sys.path.append(dir_mNSF_functions)
-
-
 import mNSF
-
 from mNSF import process_multiSample
-
 from mNSF.NSF import preprocess
 from mNSF.NSF import misc
 #from mNSF.NSF import visualize
 from mNSF.NSF import pf
 from mNSF.NSF import visualize
 from mNSF import training_multiSample
+
+from os import path
 #from scanpy import read_h5ad
 #from tensorflow.data import Dataset
-from os import path
 #import pandas
 import os
 import numpy as np
@@ -30,18 +20,10 @@ import pandas as pd
 import sys 
 import pickle
 
-
-sys.path.append(dir_output)
-os.chdir(dir_output)
-
-
-
 ########################################################################
 ########################################################################
 L=3
 nsample=2
-
-dpth='data'
 
 pth=""
 mpth = path.join(pth,"models")
@@ -61,8 +43,8 @@ misc.mkdir_p(pp)
 list_D=list()
 list_X=list()
 for ksample in range(0,nsample):
-	Y=pd.read_csv(path.join(dpth,'/Y_sample'+ str(ksample+1) +'_smallData.csv'))
-	X=pd.read_csv(path.join(dpth,'/X_sample'+ str(ksample+1) +'_smallData.csv'))
+	Y=pd.read_csv('data/Y_sample'+ str(ksample+1) +'_smallData.csv')
+	X=pd.read_csv('data/X_sample'+ str(ksample+1) +'_smallData.csv')
 	D=process_multiSample.get_D(X,Y)
 	list_D.append(D)
 	list_X.append(X)
