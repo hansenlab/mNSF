@@ -1,6 +1,6 @@
 
 
-dir_mNSF_functions='.../mNSF-main'
+dir_mNSF_functions=''
 dir_output=''
 
 ########################################################################
