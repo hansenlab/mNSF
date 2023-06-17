@@ -28,4 +28,5 @@ jobs:
       - name: Install & test
         run: |
           pip install -e .
+          pip install pytest
           pytest
