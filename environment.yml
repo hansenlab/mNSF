@@ -6,13 +6,15 @@ channels:
 dependencies:
   - python=3.10
   - anndata
+  - click
   - matplotlib
   - numpy
   - pandas
   - pip
   - scanpy
   - squidpy
-  - tensorflow
-  - tensorflow-probability
+  - tensorflow=2.11
+  - tensorflow-probability=0.19
   - pip:
       - -e .
+      - git+https://https://github.com/uqfoundation/dill@4f3fe3d

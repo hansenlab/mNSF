@@ -25,10 +25,14 @@ jobs:
         uses: mamba-org/setup-micromamba@v1
         with:
           cache-downloads: true
+          cache-environment: true
           environment-file: environment.yml
           environment-name: mnsf
+          init-shell: >-
+            bash
 
       - name: Install & test
         run: |
-          pip install -e .
-        #   pytest
+          pip install pytest
+          pytest
+        shell: bash -el {0}
