@@ -17,8 +17,8 @@ from tensorflow.linalg import matmul, matrix_transpose
 import tensorflow_probability as tfp
 tfd = tfp.distributions
 tfk = tfp.math.psd_kernels
-from utils import nnfu
-from utils.misc import t2np,reverse_normalization,params2key,dims_autocorr
+from mNSF.NSF import nnfu
+from mNSF.NSF.misc import t2np,reverse_normalization,params2key,dims_autocorr
 from models import cf,pf,likelihoods
 dtp = "float32"
 

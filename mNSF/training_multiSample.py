@@ -258,6 +258,10 @@ class ModelTrainer(object): #goal to change this to tf.module?
         for D in Dtrain_ksample: #iterate through each of the batches 
           #print("before training paras")
           #print(tf.config.experimental.get_memory_info('GPU:0'))
+          #pickle_to_file(list_tro[ksample].model,'fit_'+ str(ksample+1) +'_restore.pkl')
+          #unpickle_from_file(fpath)
+          #with open('fit_'+ str(ksample+1) +'_restore.pkl', 'rb') as inp:
+          #    list_tro[ksample].model = pickle.load(inp)  
           epoch_loss.update_state(list_tro[ksample].model.train_step( D, list_tro[ksample].optimizer, list_tro[ksample].optimizer_k,
                                    Ntot=list_tro[ksample].model.delta.shape[1], chol=True))
           trl = trl + epoch_loss.result().numpy()
