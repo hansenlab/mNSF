@@ -279,7 +279,6 @@ class ModelTrainer(object): #goal to change this to tf.module?
       #if not np.isfinite(trl) or trl>self.loss["train"][1]: ### modified
       #  raise NumericalDivergenceError###!!!NumericalDivergenceError
       if i%status_freq==0 or i==num_epochs:
-        print(tf.config.experimental.get_memory_info('GPU:0'))
         if Dval:
           val_loss = self.model.validation_step(Dval, S=S, chol=False).numpy()
           self.loss["val"][i] = val_loss
