@@ -13,7 +13,6 @@ def save_object(obj, filename):
         pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
 
 
-import psutil
 import numpy as np
 import tensorflow as tf
 from time import time,process_time
