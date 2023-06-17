@@ -654,7 +654,7 @@ graph = ["objgraph (>=1.7.2)"]
 
 [package.source]
 type = "git"
-url = "https://github.com/uqfoundation/dill"
+url = "https://github.com/uqfoundation/dill.git"
 reference = "4f3fe3d"
 resolved_reference = "4f3fe3da7ebfc1b7a1cc88fbc3f0ebfbd1973aa3"
 
@@ -4277,4 +4277,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "feb35acde08aa7a1f6ca100c99f358975b68d9c144bebbdc369e7b49622c22b1"
+content-hash = "5272754ff33d64c1651ccc0f190361fe0318eba152d6fce48834166743e9ad93"

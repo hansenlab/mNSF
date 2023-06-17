@@ -17,4 +17,3 @@ dependencies:
   - tensorflow-probability=0.19
   - pip:
       - -e .
-      - git+https://https://github.com/uqfoundation/dill@4f3fe3d
