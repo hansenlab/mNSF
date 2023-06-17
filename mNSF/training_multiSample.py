@@ -33,7 +33,7 @@ from mNSF.NSF import training
 
 
 def train_model_mNSF(list_fit_,pickle_path_,
-        		list_Dtrain_,list_D_):
+        		list_Dtrain_,list_D_, **kwargs):
 	tro_ = ModelTrainer(list_fit_[0],pickle_path=pickle_path_)
 	list_tro=list()   
 	nsample=len(list_D_)     
@@ -41,7 +41,7 @@ def train_model_mNSF(list_fit_,pickle_path_,
 		tro_tmp=training.ModelTrainer(list_fit_[k],pickle_path=pickle_path_)
 		list_tro.append(tro_tmp)
 	tro_.train_model(list_tro,
-        		list_Dtrain_,list_D_)  
+        		list_Dtrain_,list_D_, **kwargs)  
 	return list_fit_               
 	
 
