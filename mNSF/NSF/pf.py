@@ -463,9 +463,3 @@ def init_npf_with_nmf(fit, Y, X=None, sz=1, pseudocount=1e-2, factors=None,
   if beta is not None: fit.beta.assign(beta,read_value=False)
 
 
-#fit1=pf.ProcessFactorization(J,L,Z,psd_kernel=ker,nonneg=True,lik="poi")
-#fit2=fit1
-#self1_0=fit1
-#self2_0=fit2
-
-
