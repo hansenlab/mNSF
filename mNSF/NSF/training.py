@@ -18,7 +18,7 @@ from tempfile import TemporaryDirectory
 #from scipy.stats import pearsonr,linregress
 from os import path
 
-from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
+from utils.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
 
 class NumericalDivergenceError(ValueError):
   pass
@@ -82,7 +82,6 @@ class ModelTrainer(object): #goal to change this to tf.module?
     * checkpointing and pickling require the user to specify the additional
     elapsed time. If no time has elapsed the user can supply 0.0 values.
   """
-  #model: output from pf.ProcessFactorization
   def __init__(self, model, lr=0.01, pickle_path=None, max_to_keep=3, **kwargs):
     #ckpt_path="/tmp/tf_ckpts", #use temporary directory instead
     """
@@ -175,12 +174,12 @@ class ModelTrainer(object): #goal to change this to tf.module?
       fname = "converged.pickle"
     return unpickle_from_file(path.join(pth,fname))
 
-  def _train_model_fixed_lr(self, self1_0, self2_0, ckpt_mgr, Dtrain1, Dtrain2, Ntr, Dval=None, S=3,
-                           verbose=True,num_epochs=5000,
+  def _train_model_fixed_lr(self, ckpt_mgr, Dtrain, Ntr, Dval=None, S=3,
+                           verbose=True, num_epochs=5000,
                            ptic = process_time(), wtic = time(), ckpt_freq=50,
                            kernel_hp_update_freq=10, status_freq=10,
-                           span=100, tol=(5e-5)*2, pickle_freq=None):
-    """train_step
+                           span=100, tol=5e-5, pickle_freq=None):
+    """
     Dtrain, Dval : tensorflow Datasets produced by prepare_datasets_tf func
     ckpt_mgr must store at least 2 checkpoints (max_to_keep)
     Ntr: total number of training observations, needed to adjust KL term in ELBO
@@ -196,9 +195,6 @@ class ModelTrainer(object): #goal to change this to tf.module?
     tol: numerical (relative) change below which convergence is declared
     pickle_freq: how often to save the entire object to disk as a pickle file
     """
-    #print("self.model.beta0_1")
-    #print(self.model.beta0_1)# it looks fins here
-    #print("self.model.beta0_1")
     ptic,wtic = self.checkpoint(ckpt_mgr, process_time()-ptic, time()-wtic)
     self.loss["train"] = rpad(self.loss["train"],num_epochs+1)
     if pickle_freq is None: #only pickle at the end
@@ -217,42 +213,26 @@ class ModelTrainer(object): #goal to change this to tf.module?
     # def train_step_nochol(D):
     #   return self.model.train_step(D, self.optimizer, self.optimizer_k,
     #                                S=S, Ntot=Ntr, chol=False)
-    #print(123)
-    #print(self.model.beta0_1[1])
-    #print(self.model.W[1,1])
-    #print(123)
     @tf.function
-    def train_step(D1, D2, chol=True):
+    def train_step(D, chol=True):
       # if chol: return train_step_chol(D)
       # else: return train_step_nochol(D)
-      print(123123)
-      print(self.model.beta0_1[1])#??? beta0_1 was not saved here
-      print(123123)
-      return self.model.train_step(D1, D2, self.optimizer, self.optimizer_k,
+      return self.model.train_step(D, self.optimizer, self.optimizer_k,
                                    S=S, Ntot=Ntr, chol=chol)
-    #def train_step(self, D1, D2, optimizer, optimizer_k, S=1, Ntot=None, chol=True):
     cvg = 0 #increment each time we think it has converged
     cc = ConvergenceChecker(span)
     while (not self.converged) and (self.epoch < num_epochs):
       # try:
-      #print(456)
-      #print(self.model.beta0_1)
-      #print(456)
       epoch_loss = tf.keras.metrics.Mean()
       chol=(self.epoch % kernel_hp_update_freq==0)
-      for D1 in Dtrain1: 
-        print(1)
-      for D2 in Dtrain2: 
-        print(2)
-      a=train_step(D1, D2, chol=chol)
-      #print(7890)
-      epoch_loss.update_state(a)
+      for D in Dtrain: #iterate through each of the batches
+        epoch_loss.update_state(train_step(D,chol=chol))
       trl = epoch_loss.result().numpy()
       self.epoch.assign_add(1)
       i = self.epoch.numpy()
       self.loss["train"][i] = trl
       if not np.isfinite(trl) or trl>self.loss["train"][1]:
-        raise NumericalDivergenceError###!!!NumericalDivergenceError
+        raise NumericalDivergenceError
       if i%status_freq==0 or i==num_epochs:
         if Dval:
           val_loss = self.model.validation_step(Dval, S=S, chol=False).numpy()
@@ -307,7 +287,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
     """
     return max(ckpt_freq*(self.epoch.numpy()//ckpt_freq - back), epoch0)
 
-  def train_model(self, self1_0, self2_0, *args, lr_reduce=0.5, maxtry=10, verbose=True,
+  def train_model(self, *args, lr_reduce=0.5, maxtry=10, verbose=True,
                   ckpt_freq=50, **kwargs):
     """
     See train_model_fixed_lr for args and kwargs. This method is a wrapper
@@ -324,8 +304,8 @@ class ModelTrainer(object): #goal to change this to tf.module?
       mgr = tf.train.CheckpointManager(self.ckpt, directory=ckpth, max_to_keep=maxtry)
       while tries < maxtry:
         try:
-          self._train_model_fixed_lr(self1_0, self2_0, mgr, *args, ptic=ptic, wtic=wtic,
-                                      ckpt_freq=ckpt_freq,#verbose=verbose,
+          self._train_model_fixed_lr(mgr, *args, ptic=ptic, wtic=wtic,
+                                     verbose=verbose, ckpt_freq=ckpt_freq,
                                      **kwargs)
           if self.epoch>=len(self.loss["train"])-1: break #finished training
         except (tf.errors.InvalidArgumentError,NumericalDivergenceError) as err: #cholesky failure
