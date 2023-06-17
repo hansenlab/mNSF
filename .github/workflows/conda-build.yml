@@ -33,6 +33,7 @@ jobs:
 
       - name: Install & test
         run: |
+          pip install -e .  # otherwise we'll be stuck with the cached version
           pip install pytest
           pytest
         shell: bash -el {0}
