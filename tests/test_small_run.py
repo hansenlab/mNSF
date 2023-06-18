@@ -10,10 +10,8 @@ from mNSF import process_multiSample, training_multiSample
 
 def load_data(pth: Path, n_sample: int):
     X = [pd.read_csv(pth / f"X_sample{k}.csv") for k in range(1, n_sample + 1)]
-    D = [
-        process_multiSample.get_D(x, pd.read_csv(pth / f"Y_sample{k}.csv"))
-        for x, k in zip(X, range(1, n_sample + 1))
-    ]
+    Y = [pd.read_csv(pth / f"Y_sample{k}.csv") for k in range(1, n_sample + 1)]
+    D = [process_multiSample.get_D(x, y) for x, y in zip(X, Y)]
     return D, X
 
 
@@ -42,7 +40,8 @@ def run(data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sam
     inpf12 = process_multiSample.interpret_npf_v3(fit, X, S=2, lda_mode=False)
     (
         pd.DataFrame(
-            inpf12["loadings"] * inpf12["totals1"][:, None], columns=range(1, n_loadings + 1)
+            inpf12["loadings"] * inpf12["totals1"][:, None],
+            columns=range(1, n_loadings + 1),
         ).to_csv(output_dir / "loadings_spde_smallData.csv")
     )
 
