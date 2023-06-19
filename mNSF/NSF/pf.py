@@ -14,7 +14,7 @@ from tensorflow import linalg as tfl
 from sklearn.decomposition import TruncatedSVD
 from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
-
+import gc
 from mNSF.NSF import likelihoods
 from mNSF.NSF import misc, nnfu
 tfd = tfp.distributions
@@ -310,7 +310,9 @@ class ProcessFactorization(tf.Module):
     eloglik = likelihoods.lik_to_distr(self.lik, Mu, self.disp).log_prob(Y)
     return J*tf.reduce_mean(eloglik) - kl_term/Ntot
 
-  def elbo_avg_self1(self, X, Y, sz=1, S=1, Ntot=None, chol=True):
+
+
+  def elbo_avg1(self, X, Y, sz=1, S=1, Ntot=None, chol=True):
     """
     Parameters
     ----------
@@ -336,18 +338,114 @@ class ProcessFactorization(tf.Module):
     """
     batch_size, J = Y.shape
     if Ntot is None: Ntot = batch_size #no minibatch, all observations provided
-    ker = self.get_kernel()#not trainable
-    mu_z = self.get_mu_z_1()#trainable_
-    Kuu_chol = self.get_Kuu_chol(kernel=ker,from_cache=(not chol))#not trainable
+    #print(11)
+    ker = self.get_kernel()
+    mu_z = self.get_mu_z()
+    #print(111)
+    Kuu_chol = self.get_Kuu_chol(kernel=ker,from_cache=(not chol))
     #kl_terms is not affected by minibatching so use reduce_sum
-    kl_term = tf.reduce_sum(self.eval_kl_term(mu_z, Kuu_chol))#trainable_
-    Mu = self.sample_predictive_mean_1(X, sz=sz, S=S, kernel=ker, mu_z=mu_z, Kuu_chol=Kuu_chol)#trainable_
-    eloglik = likelihoods.lik_to_distr(self.lik, Mu, self.disp).log_prob(Y)#not trainable
-    return J*tf.reduce_mean(eloglik) - kl_term/Ntot#not trainable
+    #print(1111)
+    #kl_term = tf.reduce_sum(self.eval_kl_term(mu_z, Kuu_chol))
+    Mu = self.sample_predictive_mean(X, sz=sz, S=S, kernel=ker, mu_z=mu_z, Kuu_chol=Kuu_chol)
+    eloglik = likelihoods.lik_to_distr(self.lik, Mu, self.disp).log_prob(Y)
+    return J*tf.reduce_mean(eloglik) #- kl_term/Ntot
+    
+    
+  
+    
+  def elbo_avg2(self, X, Y, sz=1, S=1, Ntot=None, chol=True):
+    """
+    Parameters
+    ----------
+    X : numpy array of spatial coordinates (NxD)
+        **OR** a tuple of spatial coordinates, multivariate outcomes,
+        and size factors (convenient for minibatches from tensor slices)
+    Y : numpy array of multivariate outcomes (NxJ)
+        If Y is None then X must be a tuple of length three
+    sz : size factors, optional
+        vector of length N, typically the rowSums or rowMeans of Y.
+        If X is a tuple then this is ignored as sz is expected in the third
+        element of the X tuple.
+    S : integer, optional
+        Number of random GP function evaluations to use. The default is 1.
+        Larger S=more accurate approximation to true ELBO but slower
+    Ntot : total number of observations in full dataset
+        This is needed when X,Y,sz are a minibatch from the full data
+        If Ntot is None, we assume X,Y,sz provided are the full data NOT a minibatch.
 
+    Returns
+    -------
+    The numeric evidence lower bound value, divided by Ntot.
+    """
+    batch_size, J = Y.shape
+    if Ntot is None: Ntot = batch_size #no minibatch, all observations provided
+    #print(11)
+    ker = self.get_kernel()
+    mu_z = self.get_mu_z()
+    #print(111)
+    Kuu_chol = self.get_Kuu_chol(kernel=ker,from_cache=(not chol))
+    #kl_terms is not affected by minibatching so use reduce_sum
+    #print(1111)
+    kl_term = tf.reduce_sum(self.eval_kl_term(mu_z, Kuu_chol))
+    #Mu = self.sample_predictive_mean(X, sz=sz, S=S, kernel=ker, mu_z=mu_z, Kuu_chol=Kuu_chol)
+    #eloglik = likelihoods.lik_to_distr(self.lik, Mu, self.disp).log_prob(Y)
+    return (- kl_term/Ntot)
+    
+    
+  def train_step1(self, D, optimizer, optimizer_k, S=1, Ntot=None, chol=True):
+    """
+    Executes one training step and returns the loss.
+    D is training data: a tensorflow dataset (from slices) of (X,Y,sz)
+    This function computes the loss and gradients, and uses the latter to
+    update the model's parameters.
+    """
+    with tf.GradientTape(persistent=True) as tape:
+      loss1 = -self.elbo_avg1(D["X"], D["Y"], sz=D["sz"], S=S, Ntot=Ntot, chol=chol)
+    try:
+      gradients1 = tape.gradient(loss1, self.trvars_nonkernel)
+      #print("after gradients1")
+      #print(tf.config.experimental.get_memory_info('GPU:0'))
+      #gc.collect()
+      #print("after gradients1,gc.collect()")
+      #print(tf.config.experimental.get_memory_info('GPU:0'))
+      optimizer.apply_gradients(zip(gradients1, self.trvars_nonkernel))
+      if chol:
+        gradients_k1 = tape.gradient(loss1, self.trvars_kernel)
+        gc.collect()
+        optimizer_k.apply_gradients(zip(gradients_k1, self.trvars_kernel))
+        #print("optimizer_k.apply_gradients, gradients_k1")
+        #print(tf.config.experimental.get_memory_info('GPU:0'))
+    finally:
+      del tape
+    return loss1,gradients1
 
-
-
+  
+  def train_step2(self, D, optimizer, optimizer_k, S=1, Ntot=None, chol=True):
+    """
+    Executes one training step and returns the loss.
+    D is training data: a tensorflow dataset (from slices) of (X,Y,sz)
+    This function computes the loss and gradients, and uses the latter to
+    update the model's parameters.
+    """
+    with tf.GradientTape(persistent=True) as tape:
+      loss2 = -self.elbo_avg2(D["X"], D["Y"], sz=D["sz"], S=S, Ntot=Ntot, chol=chol)
+    try:
+      gradients2 = tape.gradient(loss2, self.trvars_nonkernel)
+      #optimizer.apply_gradients(zip(gradients2, self.trvars_nonkernel))
+      optimizer.apply_gradients([
+      	(grad, var)
+      	for (grad, var) in zip(gradients2, self.trvars_nonkernel)
+      	if grad is not None
+      ])
+      if chol:   
+        gradients_k2 = tape.gradient(loss2, self.trvars_kernel)
+        optimizer_k.apply_gradients(zip(gradients_k2, self.trvars_kernel)) 
+    finally:
+      del tape
+    return loss2
+      
+      
+  
   def train_step(self, D, optimizer, optimizer_k, S=1, Ntot=None, chol=True):
     """
     Executes one training step and returns the loss.
@@ -356,16 +454,25 @@ class ProcessFactorization(tf.Module):
     update the model's parameters.
     """
     with tf.GradientTape(persistent=True) as tape:
-      loss = -self.elbo_avg(D["X"], D["Y"], sz=D["sz"], S=S, Ntot=Ntot, chol=chol)
+      loss1 = -self.elbo_avg1(D["X"], D["Y"], sz=D["sz"], S=S, Ntot=Ntot, chol=chol)
+      loss2 = -self.elbo_avg2(D["X"], D["Y"], sz=D["sz"], S=S, Ntot=Ntot, chol=chol)
     try:
-      gradients = tape.gradient(loss, self.trvars_nonkernel)
-      if chol:
-        gradients_k = tape.gradient(loss, self.trvars_kernel)
-        optimizer_k.apply_gradients(zip(gradients_k, self.trvars_kernel))
-      optimizer.apply_gradients(zip(gradients, self.trvars_nonkernel))
+      gradients1 = tape.gradient(loss1, self.trvars_nonkernel)
+      optimizer.apply_gradients(zip(gradients1, self.trvars_nonkernel))
+      gradients2 = tape.gradient(loss2, self.trvars_nonkernel)
+      optimizer.apply_gradients(zip(gradients2, self.trvars_nonkernel))
+      #optimizer.apply_gradients(zip(gradients2, self.trvars_nonkernel))
+      #if chol:
+      #  gradients_k1 = tape.gradient(loss1, self.trvars_kernel)
+      #  gc.collect()
+      #  optimizer_k.apply_gradients(zip(gradients_k1, self.trvars_kernel))
+      #  gradients_k2 = tape.gradient(loss2, self.trvars_kernel)
+      #  gc.collect()
+      #  optimizer_k.apply_gradients(zip(gradients_k2, self.trvars_kernel))
+      #optimizer.apply_gradients(zip(gradients, self.trvars_nonkernel))
     finally:
       del tape
-    return loss
+    return (loss1+loss2)
 
   def validation_step(self, D, S=1, chol=False):
     """
@@ -396,4 +503,73 @@ class ProcessFactorization(tf.Module):
     else:
       Mu_val = None
     return Mu_tr,Mu_val
+
+
+
+
+def smooth_spatial_factors(F,Z,X=None):
+  """
+  F: real-valued factors (ie on the log scale for NPF)
+  Z: inducing point locations
+  X: spatial coordinates
+  """
+  M = Z.shape[0]
+  if X is None: #no spatial coordinates, just use the mean
+    beta0 = F.mean(axis=0)
+    U = np.tile(beta0,[M,1])
+    beta = None
+  else: #spatial coordinates
+    lr = LinearRegression().fit(X,F)
+    beta0 = lr.intercept_
+    beta = lr.coef_
+    nn = max(2, ceil(X.shape[0]/M))
+    knn = KNeighborsRegressor(n_neighbors=nn).fit(X,F)
+    U = knn.predict(Z)
+  return U,beta0,beta
+
+def init_npf_with_nmf(fit, Y, X=None, sz=1, pseudocount=1e-2, factors=None,
+                      loadings=None, shrinkage=0.2):
+  L = fit.W.shape[1]
+  # M = fit.Z.shape[0] #number of inducing points
+  kw = likelihoods.choose_nmf_pars(fit.lik)
+  F,W = nnfu.regularized_nmf(Y, L, sz=sz, pseudocount=pseudocount,
+                             factors=factors, loadings=loadings,
+                             shrinkage=shrinkage, **kw)
+  # eF = factors
+  # W = loadings
+  # if eF is None or W is None:
+  #   kw = likelihoods.choose_nmf_pars(fit.lik)
+  #   nmf = NMF(L,**kw)
+  #   eF = nmf.fit_transform(Y)#/sz
+  #   W = nmf.components_.T
+  # W = postprocess.shrink_loadings(W, shrinkage=shrinkage)
+  # wsum = W.sum(axis=0)
+  # eF = postprocess.shrink_factors(eF*wsum, shrinkage=shrinkage)
+  # F = np.log(pseudocount+eF)-np.log(sz)
+  # beta0 = fit.beta0.numpy().flatten()
+  # wt_to_W = F.mean(axis=0)- beta0
+  # F-= wt_to_W
+  # W*= np.exp(wt_to_W-np.log(wsum))
+  # W,wsum = normalize_cols(W)
+  # eF *= wsum
+  # eFm2 = eF.mean()/2
+  # eF/=eFm2
+  # W*=eFm2
+  # F = np.log(pseudocount+eF)
+  fit.set_loadings(W)
+  U,beta0,beta = smooth_spatial_factors(F,fit.Z.numpy(),X=X)
+  # if X is None: #no spatial coordinates, just use the mean
+  #   beta0 = F.mean(axis=0)
+  #   U = np.tile(beta0,[M,1])
+  # else: #spatial coordinates
+  #   lr = LinearRegression().fit(X,F)
+  #   beta0 = lr.intercept_
+  #   fit.beta.assign(lr.coef_,read_value=False)
+  #   nn = max(2, ceil(X.shape[0]/M))
+  #   knn = KNeighborsRegressor(n_neighbors=nn).fit(X,F)
+  #   U = knn.predict(fit.Z.numpy())
+  fit.beta0.assign(beta0[:,None],read_value=False)
+  fit.delta.assign(U.T,read_value=False)
+  if beta is not None: fit.beta.assign(beta,read_value=False)
+
 
