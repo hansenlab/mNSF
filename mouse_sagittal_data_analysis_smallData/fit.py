@@ -87,7 +87,7 @@ inpf12=process_multiSample.interpret_npf_v3(list_fit,list_X,S=100,lda_mode=False
 W = inpf12["loadings"]
 #Wdf=pd.DataFrame(W*inpf12["totals1"][:,None], index=ad.var.index, columns=range(1,L+1))
 
-Wdf=pd.DataFrame(W*inpf12["totals1"][:,None],  columns=range(1,L+1))
+Wdf=pd.DataFrame(W*inpf12["totalsW"][:,None],  columns=range(1,L+1))
 Wdf.to_csv(path.join("loadings_spde_smallData.csv"))
 
 
