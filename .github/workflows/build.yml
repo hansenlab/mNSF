@@ -30,3 +30,12 @@ jobs:
           pip install -e .
           pip install pytest
           pytest
+
+      - name: Notify Slack if failed
+        if: failure()
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          slack-message: "Build: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+        env:
+          SLACK_WEBHOOK_URL: "https://hooks.slack.com/workflows/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"
