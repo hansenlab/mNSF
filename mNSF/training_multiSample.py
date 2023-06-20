@@ -34,6 +34,10 @@ from mNSF.NSF import training
 
 def train_model_mNSF(list_fit_,pickle_path_,
         		list_Dtrain_,list_D_, **kwargs):
+	"""
+	run model training for mNSF
+	returns a list of fitted model, where each item in the list is for one sample
+	"""
 	tro_ = ModelTrainer(list_fit_[0],pickle_path=pickle_path_)
 	list_tro=list()   
 	nsample=len(list_D_)     
@@ -244,30 +248,12 @@ class ModelTrainer(object): #goal to change this to tf.module?
       trl=0.0
       nsample=len(list_Dtrain)
       for ksample in range(0,nsample):
-        #print("before gc.collect()")
-        #print(tf.config.experimental.get_memory_info('GPU:0'))
-        gc.collect()
-        #print("after gc.collect()")
-        #print(tf.config.experimental.get_memory_info('GPU:0'))
-        #assign_para_fromFile_toModel(list_tro[0].model,ksample)
         list_tro[ksample].model.Z=list_D__[ksample]["Z"]
-        #print("after list_tro[ksample].model.Z")
-        #print(tf.config.experimental.get_memory_info('GPU:0'))
         Dtrain_ksample = list_Dtrain[ksample]
         for D in Dtrain_ksample: #iterate through each of the batches 
-          #print("before training paras")
-          #print(tf.config.experimental.get_memory_info('GPU:0'))
-          #pickle_to_file(list_tro[ksample].model,'fit_'+ str(ksample+1) +'_restore.pkl')
-          #unpickle_from_file(fpath)
-          #with open('fit_'+ str(ksample+1) +'_restore.pkl', 'rb') as inp:
-          #    list_tro[ksample].model = pickle.load(inp)  
           epoch_loss.update_state(list_tro[ksample].model.train_step( D, list_tro[ksample].optimizer, list_tro[ksample].optimizer_k,
                                    Ntot=list_tro[ksample].model.delta.shape[1], chol=True))
           trl = trl + epoch_loss.result().numpy()
-          #print("trl")
-          #print(trl)
-          #print("after training paras")
-          #print(tf.config.experimental.get_memory_info('GPU:0'))
       W_updated=list_tro[ksample].model.W-list_tro[ksample].model.W
       for ksample in range(0,nsample):
       	W_updated = W_updated+ (list_tro[ksample].model.W / nsample)

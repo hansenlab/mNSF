@@ -24,7 +24,7 @@ tfk = tfp.math.psd_kernels
 dtp = "float32"
 rng = np.random.default_rng()
 
-class ProcessFactorization_fit12(tf.Module):
+class ProcessFactorization_multiSample(tf.Module):
   def __init__(self, J, L, Z, nsample, lik="poi", psd_kernel=tfk.MaternThreeHalves,
                nugget=1e-5, length_scale=0.1, disp="default",
                nonneg=False, isotropic=True, feature_means=None, **kwargs):

@@ -17,6 +17,9 @@ import pickle
 
 
 def get_D(X,Y):	
+	"""
+	get the formated data as a directory
+	"""
 	X = preprocess.rescale_spatial_coords(X)
 	X=X.to_numpy()
 	ad = AnnData(Y,obsm={"spatial":X})
@@ -29,6 +32,9 @@ def get_D(X,Y):
 
 
 def get_listDtrain(list_D_):
+	"""
+	get the training data (here using all data as training data)
+	"""
 	list_Dtrain=list()
 	nsample=len(list_D_)
 	for ksample in range(0,nsample):
@@ -41,6 +47,9 @@ def get_listDtrain(list_D_):
 	
 
 def get_listSampleID(list_D_):
+	"""
+	get the index of the sampleID for each spot
+	"""
 	list_sampleID=list()   
 	index_=0      
 	nsample=len(list_D_)                      
@@ -55,6 +64,9 @@ def get_listSampleID(list_D_):
 		
 	
 def ini_multiSample(list_D_,L_):
+	"""
+	do initialization for mNSF
+	"""
 	list_X=list()
 	list_Z=list()
 	list_sampleID_=list()
@@ -84,11 +96,11 @@ def ini_multiSample(list_D_,L_):
 			Z_concatenated=np.concatenate((Z_concatenated, D['Z']), axis=0)
 			Y_concatenated=np.concatenate((Y_concatenated, D['Y']), axis=0)
 			sz_concatenated=np.concatenate((sz_concatenated, D['sz']), axis=0)
-	fit12_=pf_multiSample.ProcessFactorization_fit12(J_,L_,
+	fit_multiSample=pf_multiSample.ProcessFactorization_multiSample(J_,L_,
   			Z_concatenated,
   			nsample=nsample_,
   			psd_kernel=ker,nonneg=True,lik="poi")
-	fit12_.init_loadings(Y_concatenated,
+	fit_multiSample.init_loadings(Y_concatenated,
   			list_X=list_X,
   			list_Z=list_Z,
   			sz=sz_concatenated,shrinkage=0.3)
@@ -98,11 +110,11 @@ def ini_multiSample(list_D_,L_):
 		#print(indices)
 		indices=indices.astype(int)
 		#print(indices)
-		#print(fit12_.delta.numpy()[:,indices])
-		delta=fit12_.delta.numpy()[:,indices]
-		beta0=fit12_.beta0.numpy()[((ksample)*L_):((ksample+1)*L_),:]
-		beta=fit12_.beta.numpy()[((ksample)*L_):((ksample+1)*L_),:]
-		W=fit12_.W.numpy()
+		#print(fit_multiSample.delta.numpy()[:,indices])
+		delta=fit_multiSample.delta.numpy()[:,indices]
+		beta0=fit_multiSample.beta0.numpy()[((ksample)*L_):((ksample+1)*L_),:]
+		beta=fit_multiSample.beta.numpy()[((ksample)*L_):((ksample+1)*L_),:]
+		W=fit_multiSample.W.numpy()
 		list_fit_[ksample].delta.assign(delta) 
 		list_fit_[ksample].beta0.assign(beta0)
 		list_fit_[ksample].beta.assign(beta) 
@@ -116,6 +128,9 @@ def ini_multiSample(list_D_,L_):
 
 
 def save_object(obj, filename):
+    """
+    save object to disk
+    """
     with open(filename, 'wb') as outp:  # Overwrites any existing file.
         pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
  
@@ -141,6 +156,7 @@ def interpret_npf_v3(list_fit,list_X,S=10,**kwargs):
 
 
 def interpret_nonneg(factors,loadings,lda_mode=False,sort=True):
+
   """
   Rescale factors and loadings from a nonnegative factorization
   to improve interpretability. Two possible rescalings:
@@ -158,10 +174,10 @@ def interpret_nonneg(factors,loadings,lda_mode=False,sort=True):
   """
   if lda_mode:
     W,eF,eFsum,Wsum = rescale_as_lda(factors,loadings,sort=sort)##!!!!
-    return {"factors":eF,"loadings":W,"totals1":eFsum,"totals2":Wsum}
+    return {"factors":eF,"loadings":W,"totalsF":eFsum,"totalsW":Wsum}
   else: #spatialDE mode
     eF,W,Wsum,eFsum = rescale_as_lda(loadings,factors,sort=sort)
-    return {"factors":eF,"loadings":W,"totals1":Wsum,"totals2":eFsum}
+    return {"factors":eF,"loadings":W,"totalsW":Wsum,"totalsF":eFsum}
 
 
 
