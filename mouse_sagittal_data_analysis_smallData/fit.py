@@ -100,7 +100,7 @@ for k in range(0,nsample):
 	indices=list_sampleID[k]
 	indices=indices.astype(int)
 	Factors_df = pd.DataFrame(Factors[indices,:]) 
-	Factors_df.to_csv(path.join(dir_output,"factors_sample"+str(k+1)+"_smallData.csv"))
+	Factors_df.to_csv(path.join("","factors_sample"+str(k+1)+"_smallData.csv"))
 
 
 
@@ -112,7 +112,7 @@ for ksample in range(0,nsample):
 	indices=list_sampleID[k]
 	indices=indices.astype(int)
 	fig,axes=visualize.multiheatmap(list_D[ksample]["X"],Factors[indices,:], (1,L), cmap="Blues", **hmkw)
-	fig.savefig(path.join(dir_output,"sample"+str(ksample+1)+"_smallData.png"),bbox_inches='tight')
+	fig.savefig(path.join("","sample"+str(ksample+1)+"_smallData.png"),bbox_inches='tight')
 
 
 
