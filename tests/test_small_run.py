@@ -15,12 +15,7 @@ def load_data(pth: Path, n_sample: int):
     return D, X
 
 
-@click.command()
-@click.argument("data_dir", type=click.Path(exists=True, dir_okay=True, file_okay=False))
-@click.argument("output_dir", type=click.Path(exists=True, dir_okay=True, file_okay=False))
-@click.option("--n_loadings", "-L", type=int, default=1)
-@click.option("--n_sample", "-n", type=int, default=1)
-def run(data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sample: int = 1):
+def _run(data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sample: int = 1):
     output_dir, data_dir = Path(output_dir), Path(data_dir)
 
     # step 0  Data loading
@@ -53,11 +48,18 @@ def run(data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sam
     print("Done!")
 
 
+@click.command()
+@click.argument("data_dir", type=click.Path(exists=True, dir_okay=True, file_okay=False))
+@click.argument("output_dir", type=click.Path(exists=True, dir_okay=True, file_okay=False))
+@click.option("--n_loadings", "-L", type=int, default=1)
+@click.option("--n_sample", "-n", type=int, default=1)
+def run_cli(data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sample: int = 1):
+    return _run(data_dir, output_dir, n_loadings, n_sample)
+
+
 def test_small_run():
-    runner = CliRunner()
-    result = runner.invoke(run, ["tests/data", "tests/."])
-    assert result.exit_code == 0
+    _run("tests/data", ".", n_loadings=1, n_sample=1)
 
 
 if __name__ == "__main__":
-    run()
+    run_cli()
