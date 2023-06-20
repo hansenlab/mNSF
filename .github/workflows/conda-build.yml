@@ -35,5 +35,21 @@ jobs:
         run: |
           pip install -e .  # otherwise we'll be stuck with the cached version
           pip install pytest
-          pytest
         shell: bash -el {0}
+
+      - name: Pytest
+        run: |
+          pytest --tb=native
+        shell: bash -el {0}
+
+      - name: Notify Slack if failed
+        if: failure()
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "detail": "Build: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: "https://hooks.slack.com/workflows/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"
