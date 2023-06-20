@@ -35,7 +35,7 @@ def _run(data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sa
     inpf12 = process_multiSample.interpret_npf_v3(fit, X, S=2, lda_mode=False)
     (
         pd.DataFrame(
-            inpf12["loadings"] * inpf12["totals1"][:, None],
+            inpf12["loadings"] * inpf12["totalsW"][:, None],
             columns=range(1, n_loadings + 1),
         ).to_csv(output_dir / "loadings_spde_smallData.csv")
     )
