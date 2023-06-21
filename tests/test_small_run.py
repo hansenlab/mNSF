@@ -3,7 +3,6 @@ from pathlib import Path
 
 import click
 import pandas as pd
-from click.testing import CliRunner
 
 from mNSF import process_multiSample, training_multiSample
 
@@ -15,7 +14,9 @@ def load_data(pth: Path, n_sample: int):
     return D, X
 
 
-def _run(data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sample: int = 1):
+def _run(
+    data_dir: str | Path, output_dir: str | Path, n_loadings: int = 3, n_sample: int = 2, epochs: int = 10
+):
     output_dir, data_dir = Path(output_dir), Path(data_dir)
 
     # step 0  Data loading
@@ -27,7 +28,7 @@ def _run(data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sa
     # step 2 fit model
     (pp := (output_dir / "models" / "pp")).mkdir(parents=True, exist_ok=True)
     fit = training_multiSample.train_model_mNSF(
-        fit, pp, process_multiSample.get_listDtrain(D), D, num_epochs=10
+        fit, pp, process_multiSample.get_listDtrain(D), D, num_epochs=epochs
     )
     (output_dir / "list_fit_smallData.pkl").write_bytes(pickle.dumps(fit))
 
@@ -53,8 +54,11 @@ def _run(data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sa
 @click.argument("output_dir", type=click.Path(exists=True, dir_okay=True, file_okay=False))
 @click.option("--n_loadings", "-L", type=int, default=1)
 @click.option("--n_sample", "-n", type=int, default=1)
-def run_cli(data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sample: int = 1):
-    return _run(data_dir, output_dir, n_loadings, n_sample)
+@click.option("--epochs", "-e", type=int, default=10)
+def run_cli(
+    data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sample: int = 1, epochs: int = 10
+):
+    return _run(data_dir, output_dir, n_loadings, n_sample, epochs)
 
 
 def test_small_run():
