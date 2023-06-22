@@ -30,6 +30,16 @@ def get_D(X,Y):
 	D["Z"]=D['X']
 	return D
 
+def get_D_fromAnnData(ad):	# Same as get_D but starting from AnnData object
+	"""
+	get the formated data as a directory
+	"""
+	ad.layers = {"counts":ad.X.copy()} #store raw counts before normalization changes ad.X
+	pp.normalize_total(ad, inplace=True, layers=None, key_added="sizefactor")
+	pp.log1p(ad)
+	D,_ = preprocess.anndata_to_train_val(ad, layer="counts", train_frac=1.0,flip_yaxis=False)
+	D["Z"]=D['X']
+	return D
 
 def get_listDtrain(list_D_):
 	"""
