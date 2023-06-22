@@ -34,7 +34,7 @@ from mNSF.NSF import training
 
 
 def train_model_mNSF(list_fit_,pickle_path_,
-        		list_Dtrain_,list_D_,legacy=False,**kwargs):
+        		list_Dtrain_,list_D_,legacy=False,test_cvdNorm=False, maxtry=10,**kwargs):
 	"""
 	run model training for mNSF
 	returns a list of fitted model, where each item in the list is for one sample
@@ -46,7 +46,7 @@ def train_model_mNSF(list_fit_,pickle_path_,
 		tro_tmp=training.ModelTrainer(list_fit_[k],pickle_path=pickle_path_,legacy=legacy)
 		list_tro.append(tro_tmp)
 	tro_.train_model(list_tro,
-        		list_Dtrain_,list_D_, **kwargs)  
+        		list_Dtrain_,list_D_, test_cvdNorm=test_cvdNorm,maxtry=maxtry, **kwargs)  
 	return list_fit_        
 
 
@@ -237,7 +237,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
                            verbose=True,num_epochs=500,
                            ptic = process_time(), wtic = time(), ckpt_freq=50, test_cvdNorm=False,
                            kernel_hp_update_freq=10, status_freq=10,
-                           span=100, tol=1e-4, tol_norm = 0.3, pickle_freq=None):
+                           span=100, tol=1e-4, tol_norm = 0.4, pickle_freq=None):
     """train_step
     Dtrain, Dval : tensorflow Datasets produced by prepare_datasets_tf func
     ckpt_mgr must store at least 2 checkpoints (max_to_keep)
@@ -314,7 +314,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
           	rel_chg_normalized=cc.relative_chg_normalized(self.loss["train"],idx_current=i) 
           	print("rel_chg_normalized")
           	print(rel_chg_normalized)
-          	if(abs(rel_chg_normalized)<tol_norm): cvg_normalized+=1
+          	if(-(rel_chg_normalized)<tol_norm): cvg_normalized+=1 # positive values of rel_chg_normalized indicates increase of loss throughout the past 10 iterations
           if cvg>=2 or cvg_normalized>=2: #i.e. either convergence or normalized convergence has been detected twice in a row
             self.converged=True
             pickle_freq = i #ensures final pickling will happen
