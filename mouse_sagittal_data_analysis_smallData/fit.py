@@ -32,6 +32,7 @@ pp = path.join(mpth,"pp")
 
 misc.mkdir_p(pp)
 
+legacy = True # Use legacy optimizer if tensorflow 2.12.0 +
 
 
 
@@ -68,7 +69,7 @@ list_fit=process_multiSample.ini_multiSample(list_D,L)
 ################### step 2 fit model
 ########################################################################
 
-list_fit=training_multiSample.train_model_mNSF(list_fit,pp,list_Dtrain,list_D)
+list_fit=training_multiSample.train_model_mNSF(list_fit,pp,list_Dtrain,list_D, legacy=legacy)
 
 
 

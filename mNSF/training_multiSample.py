@@ -7,42 +7,39 @@ Classes and functions for training and saving models
 """
 import pickle
 import pandas as pd
-
-def save_object(obj, filename):
-    with open(filename, 'wb') as outp:  # Overwrites any existing file.
-        pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
-
-
 import numpy as np
 import tensorflow as tf
 from time import time,process_time
 from contextlib import suppress
 from tempfile import TemporaryDirectory
 from os import path
-dtp = "float32"
 import gc
+from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
+from mNSF.NSF import training
+
 ### check tv objects memory usage
 import tensorflow_probability as tfp
 tv = tfp.util.TransformedVariable
 tfb = tfp.bijectors
 
-from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
-from mNSF.NSF import training
+dtp = "float32"
 
-
+def save_object(obj, filename):
+    with open(filename, 'wb') as outp:  # Overwrites any existing file.
+        pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
 
 
 def train_model_mNSF(list_fit_,pickle_path_,
-        		list_Dtrain_,list_D_, **kwargs):
+        		list_Dtrain_,list_D_,legacy,**kwargs):
 	"""
 	run model training for mNSF
 	returns a list of fitted model, where each item in the list is for one sample
 	"""
-	tro_ = ModelTrainer(list_fit_[0],pickle_path=pickle_path_)
+	tro_ = ModelTrainer(list_fit_[0],pickle_path=pickle_path_,legacy=legacy)
 	list_tro=list()   
 	nsample=len(list_D_)     
 	for k in range(0,nsample):
-		tro_tmp=training.ModelTrainer(list_fit_[k],pickle_path=pickle_path_)
+		tro_tmp=training.ModelTrainer(list_fit_[k],pickle_path=pickle_path_,legacy=legacy)
 		list_tro.append(tro_tmp)
 	tro_.train_model(list_tro,
         		list_Dtrain_,list_D_, **kwargs)  
@@ -115,17 +112,23 @@ class ModelTrainer(object): #goal to change this to tf.module?
     elapsed time. If no time has elapsed the user can supply 0.0 values.
   """
   #model: output from pf.ProcessFactorization
-  def __init__(self, model, lr=0.01, pickle_path=None, max_to_keep=3, **kwargs):
+  def __init__(self, model, lr=0.01, pickle_path=None, max_to_keep=3, legacy=False, **kwargs):
     #ckpt_path="/tmp/tf_ckpts", #use temporary directory instead
     """
     **kwargs are passed to tf.optimizers.[Optimizer] constructor
     """
     self.loss = {"train":np.array([np.nan]), "val":np.array([np.nan])}
     self.model = model
-    #optimizer for all variables except kernel hyperparams
-    self.optimizer = tf.optimizers.Adam(learning_rate=lr, **kwargs)
-    #optimizer for kernel hyperparams, does nothing for nonspatial models
-    self.optimizer_k = tf.optimizers.Adam(learning_rate=0.01*lr, **kwargs)
+    self.legacy = legacy
+    if self.legacy: #need to use legacy optimizer with tensorflow v2.12.0 +
+      self.optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=lr, **kwargs)
+      self.optimizer_k = tf.keras.optimizers.legacy.Adam(learning_rate=0.01*lr, **kwargs)
+    else:
+      #optimizer for all variables except kernel hyperparams
+      self.optimizer = tf.optimizers.Adam(learning_rate=lr, **kwargs)
+      #optimizer for kernel hyperparams, does nothing for nonspatial models
+      self.optimizer_k = tf.optimizers.Adam(learning_rate=0.01*lr, **kwargs)
+
     self.epoch = tf.Variable(0,name="epoch")
     # self.tries = tf.Variable(0,name="number of tries")
     self.ptime = tf.Variable(0.0,name="elapsed process time")

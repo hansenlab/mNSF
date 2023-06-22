@@ -82,17 +82,23 @@ class ModelTrainer(object): #goal to change this to tf.module?
     * checkpointing and pickling require the user to specify the additional
     elapsed time. If no time has elapsed the user can supply 0.0 values.
   """
-  def __init__(self, model, lr=0.01, pickle_path=None, max_to_keep=3, **kwargs):
+  def __init__(self, model, lr=0.01, pickle_path=None, max_to_keep=3, legacy=False, **kwargs):
     #ckpt_path="/tmp/tf_ckpts", #use temporary directory instead
     """
     **kwargs are passed to tf.optimizers.[Optimizer] constructor
     """
     self.loss = {"train":np.array([np.nan]), "val":np.array([np.nan])}
     self.model = model
-    #optimizer for all variables except kernel hyperparams
-    self.optimizer = tf.optimizers.Adam(learning_rate=lr, **kwargs)
-    #optimizer for kernel hyperparams, does nothing for nonspatial models
-    self.optimizer_k = tf.optimizers.Adam(learning_rate=0.01*lr, **kwargs)
+    self.legacy = legacy
+    if self.legacy: #need to use legacy optimizer with tensorflow v2.12.0 +
+      self.optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=lr, **kwargs)
+      self.optimizer_k = tf.keras.optimizers.legacy.Adam(learning_rate=0.01*lr, **kwargs)
+    else:
+      #optimizer for all variables except kernel hyperparams
+      self.optimizer = tf.optimizers.Adam(learning_rate=lr, **kwargs)
+      #optimizer for kernel hyperparams, does nothing for nonspatial models
+      self.optimizer_k = tf.optimizers.Adam(learning_rate=0.01*lr, **kwargs)
+
     self.epoch = tf.Variable(0,name="epoch")
     # self.tries = tf.Variable(0,name="number of tries")
     self.ptime = tf.Variable(0.0,name="elapsed process time")

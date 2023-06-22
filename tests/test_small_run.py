@@ -15,7 +15,7 @@ def load_data(pth: Path, n_sample: int):
 
 
 def _run(
-    data_dir: str | Path, output_dir: str | Path, n_loadings: int = 3, n_sample: int = 2, epochs: int = 10
+    data_dir: str | Path, output_dir: str | Path, n_loadings: int = 3, n_sample: int = 2, epochs: int = 10, legacy = False
 ):
     output_dir, data_dir = Path(output_dir), Path(data_dir)
 
@@ -28,7 +28,7 @@ def _run(
     # step 2 fit model
     (pp := (output_dir / "models" / "pp")).mkdir(parents=True, exist_ok=True)
     fit = training_multiSample.train_model_mNSF(
-        fit, pp, process_multiSample.get_listDtrain(D), D, num_epochs=epochs
+        fit, pp, process_multiSample.get_listDtrain(D), D, legacy=legacy, num_epochs=epochs
     )
     (output_dir / "list_fit_smallData.pkl").write_bytes(pickle.dumps(fit))
 
@@ -55,14 +55,16 @@ def _run(
 @click.option("--n_loadings", "-L", type=int, default=1)
 @click.option("--n_sample", "-n", type=int, default=1)
 @click.option("--epochs", "-e", type=int, default=10)
+@click.option("--legacy", "-l", type=bool, default=False)
+
 def run_cli(
-    data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sample: int = 1, epochs: int = 10
+    data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sample: int = 1, epochs: int = 10, legacy = True
 ):
-    return _run(data_dir, output_dir, n_loadings, n_sample, epochs)
+    return _run(data_dir, output_dir, n_loadings, n_sample, epochs, legacy)
 
 
 def test_small_run():
-    _run("tests/data", ".", n_loadings=1, n_sample=1)
+    _run("tests/data", ".", n_loadings=1, n_sample=1, legacy=True)
 
 
 if __name__ == "__main__":
