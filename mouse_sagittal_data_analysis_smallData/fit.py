@@ -52,7 +52,7 @@ for ksample in range(0,nsample):
 
 
 	
-list_Dtrain=process_multiSample.get_listDtrain(list_D)
+list_Dtrain=process_multiSample.get_listDtrain(list_D, nbatch=1)
 list_sampleID=process_multiSample.get_listSampleID(list_D)
 
 
