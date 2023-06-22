@@ -309,11 +309,11 @@ class ModelTrainer(object): #goal to change this to tf.module?
           print(rel_chg)
           msg2 = ", chg: {:.2e}".format(-rel_chg)
           if abs(rel_chg)<tol: cvg+=1
-          else: cvg=0
-          rel_chg_normalized=cc.relative_chg_normalized(self.loss["train"],idx_current=i) 
-          print("rel_chg_normalized")
-          print(rel_chg_normalized)
+          else: cvg=0   
           if test_cvdNorm:
+          	rel_chg_normalized=cc.relative_chg_normalized(self.loss["train"],idx_current=i) 
+          	print("rel_chg_normalized")
+          	print(rel_chg_normalized)
           	if(abs(rel_chg_normalized)<tol_norm): cvg_normalized+=1
           if cvg>=2 or cvg_normalized>=2: #i.e. either convergence or normalized convergence has been detected twice in a row
             self.converged=True
