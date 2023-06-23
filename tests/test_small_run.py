@@ -15,7 +15,12 @@ def load_data(pth: Path, n_sample: int):
 
 
 def _run(
-    data_dir: str | Path, output_dir: str | Path, n_loadings: int = 3, n_sample: int = 2, epochs: int = 10, legacy = False
+    data_dir: str | Path,
+    output_dir: str | Path,
+    n_loadings: int = 3,
+    n_sample: int = 2,
+    epochs: int = 10,
+    legacy: bool = False,
 ):
     output_dir, data_dir = Path(output_dir), Path(data_dir)
 
@@ -55,10 +60,14 @@ def _run(
 @click.option("--n_loadings", "-L", type=int, default=1)
 @click.option("--n_sample", "-n", type=int, default=1)
 @click.option("--epochs", "-e", type=int, default=10)
-@click.option("--legacy", "-l", type=bool, default=False)
-
+@click.option("--legacy", "-l", is_flag=True)
 def run_cli(
-    data_dir: str | Path, output_dir: str | Path, n_loadings: int = 1, n_sample: int = 1, epochs: int = 10, legacy = True
+    data_dir: str | Path,
+    output_dir: str | Path,
+    n_loadings: int = 1,
+    n_sample: int = 1,
+    epochs: int = 10,
+    legacy: bool = True,
 ):
     return _run(data_dir, output_dir, n_loadings, n_sample, epochs, legacy)
 

@@ -7,30 +7,34 @@ Classes and functions for training and saving models
 """
 import pickle
 import pandas as pd
-import numpy as np
-import tensorflow as tf
-from time import time,process_time
-from contextlib import suppress
-from tempfile import TemporaryDirectory
-from os import path
-import gc
-from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
-from mNSF.NSF import training
-
-### check tv objects memory usage
-import tensorflow_probability as tfp
-tv = tfp.util.TransformedVariable
-tfb = tfp.bijectors
-
-dtp = "float32"
 
 def save_object(obj, filename):
     with open(filename, 'wb') as outp:  # Overwrites any existing file.
         pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
 
 
+import numpy as np
+import tensorflow as tf
+from time import time,process_time
+from contextlib import suppress
+from tempfile import TemporaryDirectory
+from os import path
+dtp = "float32"
+import gc
+### check tv objects memory usage
+import tensorflow_probability as tfp
+tv = tfp.util.TransformedVariable
+tfb = tfp.bijectors
+
+from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
+from mNSF.NSF import training
+
+
+
+
+
 def train_model_mNSF(list_fit_,pickle_path_,
-        		list_Dtrain_,list_D_,legacy,**kwargs):
+        		list_Dtrain_,list_D_,legacy=False,test_cvdNorm=False, maxtry=10,**kwargs):
 	"""
 	run model training for mNSF
 	returns a list of fitted model, where each item in the list is for one sample
@@ -42,10 +46,8 @@ def train_model_mNSF(list_fit_,pickle_path_,
 		tro_tmp=training.ModelTrainer(list_fit_[k],pickle_path=pickle_path_,legacy=legacy)
 		list_tro.append(tro_tmp)
 	tro_.train_model(list_tro,
-        		list_Dtrain_,list_D_, **kwargs)  
-	return list_fit_               
-	
-
+        		list_Dtrain_,list_D_, test_cvdNorm=test_cvdNorm,maxtry=maxtry, **kwargs)  
+	return list_fit_        
 
 
 
@@ -84,10 +86,31 @@ class ConvergenceChecker(object):
       y = self.smooth(y)
     prev=y[-2]
     return (y[-1]-prev)/(0.1+abs(prev))
+    
+    
 
+    
   def converged(self,y,tol=1e-4,**kwargs):
     return abs(self.relative_change(y,**kwargs)) < tol
 
+  
+  def relative_chg_normalized(self, y, idx_current = -1, len_trace=50, smooth=True):
+    cc = self.relative_change_trace( y, idx_current = idx_current, len_trace=len_trace, smooth=smooth)
+    print(cc)
+    mean_cc = np.nanmean(cc) 
+    sd_cc = np.std(cc) 
+    return mean_cc/sd_cc
+    
+
+    
+  def relative_change_trace(self, y, idx_current = -1, len_trace=50, smooth=True):
+    #n = len(y)
+    #span = self.U.shape[0]
+    #span = self.U.shape[0]
+    cc=self.relative_change_all(y,smooth=smooth)
+    return cc[(idx_current-len_trace):idx_current]
+    
+	
   def relative_change_all(self,y,smooth=True):
     n = len(y)
     span = self.U.shape[0]
@@ -212,9 +235,9 @@ class ModelTrainer(object): #goal to change this to tf.module?
   def _train_model_fixed_lr(self, list_tro,list_Dtrain, list_D__, ckpt_mgr,Dval=None, #Ntr=None,  
                             S=3,
                            verbose=True,num_epochs=500,
-                           ptic = process_time(), wtic = time(), ckpt_freq=50,
+                           ptic = process_time(), wtic = time(), ckpt_freq=50, test_cvdNorm=False,
                            kernel_hp_update_freq=10, status_freq=10,
-                           span=100, tol=(5e-5)*2, pickle_freq=None):
+                           span=100, tol=1e-4, tol_norm = 0.4, pickle_freq=None):
     """train_step
     Dtrain, Dval : tensorflow Datasets produced by prepare_datasets_tf func
     ckpt_mgr must store at least 2 checkpoints (max_to_keep)
@@ -241,6 +264,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
       self.loss["val"] = rpad(self.loss["val"],num_epochs+1)
     msg2 = "" #modified later to include rel_chg
     cvg = 0 #increment each time we think it has converged
+    cvg_normalized=0
     cc = ConvergenceChecker(span)
     #epoch=0
     while (not self.converged) and (self.epoch < num_epochs):
@@ -257,13 +281,21 @@ class ModelTrainer(object): #goal to change this to tf.module?
           epoch_loss.update_state(list_tro[ksample].model.train_step( D, list_tro[ksample].optimizer, list_tro[ksample].optimizer_k,
                                    Ntot=list_tro[ksample].model.delta.shape[1], chol=True))
           trl = trl + epoch_loss.result().numpy()
+          #print("ksample")
+          #print(ksample)
+          #print(D["X"].shape)
+          #print(list_tro[ksample].model.delta.shape[1])
+          #print(tf.config.experimental.get_memory_info('GPU:0'))
       W_updated=list_tro[ksample].model.W-list_tro[ksample].model.W
+      #print(trl)
       for ksample in range(0,nsample):
       	W_updated = W_updated+ (list_tro[ksample].model.W / nsample)
       self.epoch.assign_add(1)
       i = self.epoch.numpy()
       self.loss["train"][i] = trl
       if not np.isfinite(trl): ### modified
+        print("training loss calculated at the point of divergence: ")
+        print(trl)
         raise NumericalDivergenceError###!!!NumericalDivergenceError
       #if not np.isfinite(trl) or trl>self.loss["train"][1]: ### modified
       #  raise NumericalDivergenceError###!!!NumericalDivergenceError
@@ -277,8 +309,13 @@ class ModelTrainer(object): #goal to change this to tf.module?
           print(rel_chg)
           msg2 = ", chg: {:.2e}".format(-rel_chg)
           if abs(rel_chg)<tol: cvg+=1
-          else: cvg=0
-          if cvg>=2: #ie convergence has been detected twice in a row---!!!!!!!
+          else: cvg=0   
+          if test_cvdNorm:
+          	rel_chg_normalized=cc.relative_chg_normalized(self.loss["train"],idx_current=i) 
+          	print("rel_chg_normalized")
+          	print(rel_chg_normalized)
+          	if(-(rel_chg_normalized)<tol_norm): cvg_normalized+=1 # positive values of rel_chg_normalized indicates increase of loss throughout the past 10 iterations
+          if cvg>=2 or cvg_normalized>=2: #i.e. either convergence or normalized convergence has been detected twice in a row
             self.converged=True
             pickle_freq = i #ensures final pickling will happen
             self.loss = truncate_history(self.loss, i)
@@ -324,7 +361,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
     return max(ckpt_freq*(self.epoch.numpy()//ckpt_freq - back), epoch0)
 
   def train_model(self, list_tro, list_Dtrain, list_D__, lr_reduce=0.5, maxtry=10, verbose=True,#*args,
-                  ckpt_freq=50, **kwargs):
+                  ckpt_freq=50, test_cvdNorm=False, **kwargs):
     """
     See train_model_fixed_lr for args and kwargs. This method is a wrapper
     that automatically tries to adjust the learning rate

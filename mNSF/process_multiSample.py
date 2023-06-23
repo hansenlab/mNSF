@@ -30,18 +30,8 @@ def get_D(X,Y):
 	D["Z"]=D['X']
 	return D
 
-def get_D_fromAnnData(ad):	# Same as get_D but starting from AnnData object
-	"""
-	get the formated data as a directory
-	"""
-	ad.layers = {"counts":ad.X.copy()} #store raw counts before normalization changes ad.X
-	pp.normalize_total(ad, inplace=True, layers=None, key_added="sizefactor")
-	pp.log1p(ad)
-	D,_ = preprocess.anndata_to_train_val(ad, layer="counts", train_frac=1.0,flip_yaxis=False)
-	D["Z"]=D['X']
-	return D
 
-def get_listDtrain(list_D_):
+def get_listDtrain(list_D_,nbatch=1):
 	"""
 	get the training data (here using all data as training data)
 	"""
@@ -51,7 +41,10 @@ def get_listDtrain(list_D_):
 		D=list_D_[ksample]
 		Ntr = D["Y"].shape[0]
 		Dtrain = Dataset.from_tensor_slices(D)
-		D_train = Dtrain.batch(round(Ntr)+1)
+		if (nbatch==1): D_train = Dtrain.batch(round(Ntr)+1)
+		else:
+			Ntr_batch=round(Ntr/nbatch)+1
+			D_train = Dtrain.batch(round(Ntr_batch)+1)
 		list_Dtrain.append(D_train)
 	return list_Dtrain
 	
