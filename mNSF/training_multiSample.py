@@ -7,47 +7,45 @@ Classes and functions for training and saving models
 """
 import pickle
 import pandas as pd
-
-def save_object(obj, filename):
-    with open(filename, 'wb') as outp:  # Overwrites any existing file.
-        pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
-
-
 import numpy as np
 import tensorflow as tf
 from time import time,process_time
 from contextlib import suppress
 from tempfile import TemporaryDirectory
 from os import path
-dtp = "float32"
 import gc
+from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
+from mNSF.NSF import training,visualize
+
 ### check tv objects memory usage
 import tensorflow_probability as tfp
 tv = tfp.util.TransformedVariable
 tfb = tfp.bijectors
 
-from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
-from mNSF.NSF import training
+dtp = "float32"
 
 
-
+def save_object(obj, filename):
+    with open(filename, 'wb') as outp:  # Overwrites any existing file.
+        pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
 
 
 def train_model_mNSF(list_fit_,pickle_path_,
-        		list_Dtrain_,list_D_,legacy=False,test_cvdNorm=False, maxtry=10,**kwargs):
-	"""
-	run model training for mNSF
-	returns a list of fitted model, where each item in the list is for one sample
-	"""
-	tro_ = ModelTrainer(list_fit_[0],pickle_path=pickle_path_,legacy=legacy)
-	list_tro=list()   
-	nsample=len(list_D_)     
-	for k in range(0,nsample):
-		tro_tmp=training.ModelTrainer(list_fit_[k],pickle_path=pickle_path_,legacy=legacy)
-		list_tro.append(tro_tmp)
-	tro_.train_model(list_tro,
-        		list_Dtrain_,list_D_, test_cvdNorm=test_cvdNorm,maxtry=maxtry, **kwargs)  
-	return list_fit_        
+            list_Dtrain_,list_D_,legacy=False,test_cvdNorm=False, maxtry=10, lr=0.01, **kwargs):
+  """
+  run model training for mNSF
+  returns a list of fitted model, where each item in the list is for one sample
+  """
+  tro_ = ModelTrainer(list_fit_[0],pickle_path=pickle_path_,legacy=legacy, lr=lr)
+  list_tro=list()
+  nsample=len(list_D_)     
+  for k in range(0,nsample):
+    tro_tmp=training.ModelTrainer(list_fit_[k],pickle_path=pickle_path_,legacy=legacy, lr=lr)
+    list_tro.append(tro_tmp)
+  tro_.train_model(list_tro,
+            list_Dtrain_,list_D_, test_cvdNorm=test_cvdNorm,maxtry=maxtry, **kwargs)
+  visualize.plot_loss(tro_.loss)
+  return list_fit_        
 
 
 
