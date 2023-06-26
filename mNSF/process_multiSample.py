@@ -1,19 +1,14 @@
 
-from mNSF.NSF import pf
 from tensorflow_probability import math as tm
-from mNSF import pf_multiSample
-ker = tm.psd_kernels.MaternThreeHalves
-
-from mNSF.NSF import postprocess
-from mNSF.NSF import preprocess
-from mNSF.NSF import misc
-from mNSF import training_multiSample
-from mNSF.NSF import pf
+from mNSF import pf_multiSample,training_multiSample
+from mNSF.NSF import misc,pf,preprocess,postprocess
 from anndata import AnnData
 from scanpy import pp
 import numpy as np
 from tensorflow.data import Dataset
 import pickle
+
+ker = tm.psd_kernels.MaternThreeHalves
 
 
 def get_D(X,Y):	
@@ -23,6 +18,17 @@ def get_D(X,Y):
 	X = preprocess.rescale_spatial_coords(X)
 	X=X.to_numpy()
 	ad = AnnData(Y,obsm={"spatial":X})
+	ad.layers = {"counts":ad.X.copy()} #store raw counts before normalization changes ad.X
+	pp.normalize_total(ad, inplace=True, layers=None, key_added="sizefactor")
+	pp.log1p(ad)
+	D,_ = preprocess.anndata_to_train_val(ad, layer="counts", train_frac=1.0,flip_yaxis=False)
+	D["Z"]=D['X']
+	return D
+
+def get_D_fromAnnData(ad):	# Same as get_D but starting from AnnData object
+	"""
+	get the formated data as a directory
+	"""
 	ad.layers = {"counts":ad.X.copy()} #store raw counts before normalization changes ad.X
 	pp.normalize_total(ad, inplace=True, layers=None, key_added="sizefactor")
 	pp.log1p(ad)
