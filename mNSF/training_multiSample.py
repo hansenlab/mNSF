@@ -14,6 +14,7 @@ from contextlib import suppress
 from tempfile import TemporaryDirectory
 from os import path
 import gc
+import matplotlib.pyplot as plt
 from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
 from mNSF.NSF import training,visualize
 
@@ -45,6 +46,7 @@ def train_model_mNSF(list_fit_,pickle_path_,
   tro_.train_model(list_tro,
             list_Dtrain_,list_D_, test_cvdNorm=test_cvdNorm,maxtry=maxtry, **kwargs)
   visualize.plot_loss(tro_.loss)
+  plt.close()
   return list_fit_        
 
 
