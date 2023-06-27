@@ -23,10 +23,12 @@ from csv import writer
 
 ########################################################################
 ########################################################################
-L=40
+L=15  ## CHANGE THIS
 nsample=3
-epochs = 500
+epochs = 100
 legacy = True # Use legacy optimizer if tensorflow 2.12.0 +
+tries = 1
+lr = 0.0001
 
 
 dpth='data'
@@ -87,7 +89,7 @@ output_memory_list.append(L)
 start = time.time()
 output_memory_list.append(tf.config.experimental.get_memory_info("GPU:0")['peak']/(1024*1024*1024))
 
-list_fit=training_multiSample.train_model_mNSF(list_fit,pp,list_Dtrain,list_D, legacy=legacy, num_epochs=epochs)
+list_fit=training_multiSample.train_model_mNSF(list_fit,pp,list_Dtrain,list_D, legacy=legacy, maxtry = tries, num_epochs=epochs, tol=0, lr=lr) # set tol to 0 to prevent convergence
 
 output_memory_list.append(tf.config.experimental.get_memory_info("GPU:0")['peak']/(1024*1024*1024))
 end = time.time()
