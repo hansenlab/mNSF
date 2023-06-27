@@ -45,8 +45,15 @@ def train_model_mNSF(list_fit_,pickle_path_,
     list_tro.append(tro_tmp)
   tro_.train_model(list_tro,
             list_Dtrain_,list_D_, test_cvdNorm=test_cvdNorm,maxtry=maxtry, **kwargs)
-  visualize.plot_loss(tro_.loss)
-  plt.close()
+  
+  # automatically create and save loss plot
+  # included here to avoid changing analysis scripts, might want to change later
+  tr = np.array(tro_.loss["train"])
+  plt.plot(tr,c="blue",label="train")
+  plt.xlabel("epoch")
+  plt.ylabel("ELBO loss")
+  plt.savefig("loss.png")
+  
   return list_fit_        
 
 
