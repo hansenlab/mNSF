@@ -184,7 +184,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
                            verbose=True, num_epochs=5000,
                            ptic = process_time(), wtic = time(), ckpt_freq=50,
                            kernel_hp_update_freq=10, status_freq=10,
-                           span=100, tol=5e-5, pickle_freq=None):
+                           span=100, tol=5e-5, pickle_freq=None, check_convergence=True):
     """
     Dtrain, Dval : tensorflow Datasets produced by prepare_datasets_tf func
     ckpt_mgr must store at least 2 checkpoints (max_to_keep)
@@ -243,7 +243,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
         if Dval:
           val_loss = self.model.validation_step(Dval, S=S, chol=False).numpy()
           self.loss["val"][i] = val_loss
-        if i>span: #checking for convergence
+        if i>span and check_convergence: #checking for convergence
           rel_chg = cc.relative_change(self.loss["train"],idx=i)
           msg2 = ", chg: {:.2e}".format(-rel_chg)
           if abs(rel_chg)<tol: cvg+=1

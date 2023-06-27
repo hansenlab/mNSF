@@ -230,12 +230,12 @@ class ModelTrainer(object): #goal to change this to tf.module?
       fname = "converged.pickle"
     return unpickle_from_file(path.join(pth,fname))
 
-  def _train_model_fixed_lr(self, list_tro,list_Dtrain, list_D__, ckpt_mgr,Dval=None, #Ntr=None,  
+  def _train_model_fixed_lr(self, list_tro,list_Dtrain, list_D__, ckpt_mgr,Dval=None, #Ntr=None,
                             S=3,
                            verbose=True,num_epochs=500,
                            ptic = process_time(), wtic = time(), ckpt_freq=50, test_cvdNorm=False,
                            kernel_hp_update_freq=10, status_freq=10,
-                           span=100, tol=1e-4, tol_norm = 0.4, pickle_freq=None):
+                           span=100, tol=1e-4, tol_norm = 0.4, pickle_freq=None, check_convergence: bool = True):
     """train_step
     Dtrain, Dval : tensorflow Datasets produced by prepare_datasets_tf func
     ckpt_mgr must store at least 2 checkpoints (max_to_keep)
@@ -301,7 +301,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
         if Dval:
           val_loss = self.model.validation_step(Dval, S=S, chol=False).numpy()
           self.loss["val"][i] = val_loss
-        if i>span: #checking for convergence
+        if i>span and check_convergence: #checking for convergence
           rel_chg = cc.relative_change(self.loss["train"],idx=i)
           print("rel_chg")
           print(rel_chg)
