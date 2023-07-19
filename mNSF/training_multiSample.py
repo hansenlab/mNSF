@@ -49,11 +49,14 @@ def train_model_mNSF(list_fit_,pickle_path_,
   # automatically create and save loss plot
   # included here to avoid changing analysis scripts, might want to change later
   tr = np.array(tro_.loss["train"])
+  plt.figure()
   plt.plot(tr,c="blue",label="train")
   plt.xlabel("epoch")
   plt.ylabel("ELBO loss")
   plt.savefig("loss.png")
-  
+  plt.show()
+  plt.clf()
+
   return list_fit_        
 
 
@@ -300,6 +303,12 @@ class ModelTrainer(object): #goal to change this to tf.module?
       self.epoch.assign_add(1)
       i = self.epoch.numpy()
       self.loss["train"][i] = trl
+
+      ## check for nan in any sample loadings
+      for fit_i in list_tro:
+        if np.isnan(fit_i.model.W).any():
+          print('NaN in sample ' + str(list_tro.index(fit_i) + 1))
+
       if not np.isfinite(trl): ### modified
         print("training loss calculated at the point of divergence: ")
         print(trl)
@@ -391,6 +400,18 @@ class ModelTrainer(object): #goal to change this to tf.module?
                                      **kwargs)
           if self.epoch>=len(self.loss["train"])-1: break #finished training
         except (tf.errors.InvalidArgumentError,NumericalDivergenceError) as err: #cholesky failure
+          # plot loss when diverges          
+          tr = np.array(self.loss["train"])
+          #color_list = list(matplotlib.colors.TABLEAU_COLORS.values())
+          plt.figure()
+          plt.plot(tr,c='blue',label="train")
+          plt.xlabel("epoch")
+          plt.ylabel("ELBO loss")
+          plt.title("Try " + str(tries))
+          plt.savefig("loss" + str(tries) + ".png")
+          plt.show()
+          plt.clf()
+          #
           tries+=1
           print("tries")
           print(tries)

@@ -22,8 +22,9 @@ import pickle
 
 ########################################################################
 ########################################################################
-L=3
-nsample=2
+L=10
+nsample=3
+lik = 'nb'
 
 pth=""
 mpth = path.join(pth,"models")
@@ -51,7 +52,6 @@ for ksample in range(0,nsample):
 	list_X.append(X)
 
 
-	
 list_Dtrain=process_multiSample.get_listDtrain(list_D, nbatch=1)
 list_sampleID=process_multiSample.get_listSampleID(list_D)
 
@@ -60,7 +60,7 @@ list_sampleID=process_multiSample.get_listSampleID(list_D)
 ################### step 1 initialize model
 ########################################################################
 
-list_fit=process_multiSample.ini_multiSample(list_D,L)
+list_fit=process_multiSample.ini_multiSample(list_D,L,lik)
 #indices=indices.astype(int)
 
 
@@ -106,20 +106,10 @@ for k in range(0,nsample):
 
 
 
-
 ## plot the factors
 hmkw = {"figsize":(7,.9),"bgcol":"white","subplot_space":0.1,"marker":"s","s":10}
 for ksample in range(0,nsample):
-	indices=list_sampleID[k]
+	indices=list_sampleID[ksample]
 	indices=indices.astype(int)
 	fig,axes=visualize.multiheatmap(list_D[ksample]["X"],Factors[indices,:], (1,L), cmap="Blues", **hmkw)
 	fig.savefig(path.join("","sample"+str(ksample+1)+"_smallData.png"),bbox_inches='tight')
-
-
-
-
-
-
-
-	
-

@@ -72,7 +72,7 @@ def get_listSampleID(list_D_):
 	
 		
 	
-def ini_multiSample(list_D_,L_):
+def ini_multiSample(list_D_,L_, lik = 'poi'):
 	"""
 	do initialization for mNSF
 	"""
@@ -92,7 +92,7 @@ def ini_multiSample(list_D_,L_):
 	J_=list_D_[0]["Y"].shape[1]
 	for ksample in range(0,nsample_):
 		D=list_D_[ksample]
-		fit=pf.ProcessFactorization(J_,L_,D['Z'],psd_kernel=ker,nonneg=True,lik="poi")
+		fit=pf.ProcessFactorization(J_,L_,D['Z'],psd_kernel=ker,nonneg=True,lik=lik)
 		fit.init_loadings(D["Y"],X=D['X'],sz=D["sz"],shrinkage=0.3)
 		list_fit_.append(fit)
 		if ksample==0:
@@ -108,7 +108,7 @@ def ini_multiSample(list_D_,L_):
 	fit_multiSample=pf_multiSample.ProcessFactorization_multiSample(J_,L_,
   			Z_concatenated,
   			nsample=nsample_,
-  			psd_kernel=ker,nonneg=True,lik="poi")
+  			psd_kernel=ker,nonneg=True,lik=lik)
 	fit_multiSample.init_loadings(Y_concatenated,
   			list_X=list_X,
   			list_Z=list_Z,
