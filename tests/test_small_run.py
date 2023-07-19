@@ -21,6 +21,7 @@ def _run(
     n_sample: int = 2,
     epochs: int = 10,
     legacy: bool = False,
+    lik: str = 'nb'
 ):
     output_dir, data_dir = Path(output_dir), Path(data_dir)
 
@@ -28,7 +29,7 @@ def _run(
     D, X = load_data(data_dir, n_sample)
 
     # step 1 initialize model
-    fit = process_multiSample.ini_multiSample(D, n_loadings)
+    fit = process_multiSample.ini_multiSample(D, n_loadings, lik)
 
     # step 2 fit model
     (pp := (output_dir / "models" / "pp")).mkdir(parents=True, exist_ok=True)
@@ -61,6 +62,8 @@ def _run(
 @click.option("--n_sample", "-n", type=int, default=1)
 @click.option("--epochs", "-e", type=int, default=10)
 @click.option("--legacy", "-l", is_flag=True)
+@click.option("--lik", "-lik", type=str, default='nb')
+
 def run_cli(
     data_dir: str | Path,
     output_dir: str | Path,
@@ -68,12 +71,13 @@ def run_cli(
     n_sample: int = 1,
     epochs: int = 10,
     legacy: bool = True,
+    lik: str = 'nb'
 ):
-    return _run(data_dir, output_dir, n_loadings, n_sample, epochs, legacy)
+    return _run(data_dir, output_dir, n_loadings, n_sample, epochs, legacy, lik)
 
 
 def test_small_run():
-    _run("tests/data", ".", n_loadings=1, n_sample=1, legacy=True)
+    _run(data_dir="tests/data", output_dir=".", n_loadings=1, n_sample=1, epochs = 500, legacy=True, lik='nb')
 
 
 if __name__ == "__main__":
