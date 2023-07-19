@@ -21,7 +21,7 @@ def _run(
     n_sample: int = 2,
     epochs: int = 10,
     legacy: bool = False,
-    lik: str = 'nb'
+    lik: str = 'poi'
 ):
     output_dir, data_dir = Path(output_dir), Path(data_dir)
 
@@ -62,7 +62,7 @@ def _run(
 @click.option("--n_sample", "-n", type=int, default=1)
 @click.option("--epochs", "-e", type=int, default=10)
 @click.option("--legacy", "-l", is_flag=True)
-@click.option("--lik", "-lik", type=str, default='nb')
+@click.option("--lik", "-lik", type=str, default='poi')
 
 def run_cli(
     data_dir: str | Path,
@@ -71,13 +71,13 @@ def run_cli(
     n_sample: int = 1,
     epochs: int = 10,
     legacy: bool = True,
-    lik: str = 'nb'
+    lik: str = 'poi'
 ):
     return _run(data_dir, output_dir, n_loadings, n_sample, epochs, legacy, lik)
 
 
 def test_small_run():
-    _run(data_dir="tests/data", output_dir=".", n_loadings=1, n_sample=1, epochs = 500, legacy=True, lik='nb')
+    _run(data_dir="tests/data", output_dir=".", n_loadings=1, n_sample=1, epochs = 500, legacy=True, lik='poi')
 
 
 if __name__ == "__main__":
