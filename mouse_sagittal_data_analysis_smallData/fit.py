@@ -49,7 +49,7 @@ for ksample in range(0,nsample):
 	X=pd.read_csv('data/X_sample'+ str(ksample+1) +'_smallData.csv')
 	D=process_multiSample.get_D(X,Y)
 	list_D.append(D)
-	list_X.append(X)
+	list_X.append(D["X"])
 
 
 list_Dtrain=process_multiSample.get_listDtrain(list_D, nbatch=1)
