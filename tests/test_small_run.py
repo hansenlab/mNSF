@@ -11,7 +11,7 @@ def load_data(pth: Path, n_sample: int):
     X = [pd.read_csv(pth / f"X_sample{k}.csv") for k in range(1, n_sample + 1)]
     Y = [pd.read_csv(pth / f"Y_sample{k}.csv") for k in range(1, n_sample + 1)]
     D = [process_multiSample.get_D(x, y) for x, y in zip(X, Y)]
-    X = [D[k]["X"] for k in range(1, n_sample + 1)]
+    X = [D[k]["X"] for k in range(0, n_sample)]
     return D, X
 
 
