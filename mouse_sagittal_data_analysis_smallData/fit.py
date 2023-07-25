@@ -19,6 +19,7 @@ import tensorflow as tf
 import pandas as pd
 import sys 
 import pickle
+import random
 
 ########################################################################
 ########################################################################
@@ -55,6 +56,16 @@ for ksample in range(0,nsample):
 list_Dtrain=process_multiSample.get_listDtrain(list_D, nbatch=1)
 list_sampleID=process_multiSample.get_listSampleID(list_D)
 
+
+
+
+# inducing points, 35% of total spots for each sample
+for ksample in range(0,nsample):
+	random.seed(10)
+	ninduced=round(list_D[ksample]['X'].shape[0] * 0.35)
+	print(ninduced)
+	D=list_D[ksample]
+	list_D[ksample]["Z"]=D['X'][random.sample(range(0, D['X'].shape[0]-1), ninduced) ,:]
 
 ########################################################################3
 ################### step 1 initialize model
