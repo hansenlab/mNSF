@@ -85,7 +85,7 @@ def ini_multiSample(list_D_,L_, lik = 'poi'):
 		D=list_D_[ksample]
 		list_X.append(D['X'])
 		list_Z.append(D['Z'])
-		Ntr = D["Y"].shape[0]
+		Ntr = D["Z"].shape[0]
 		list_sampleID_.append(np.arange(index__,index__+Ntr))
 		index__=index__+Ntr                                   
 	list_fit_=list()
