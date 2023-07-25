@@ -29,6 +29,7 @@ def _run(
 
     # step 0  Data loading
     D, X = load_data(data_dir, n_sample)
+    listDtrain = process_multiSample.get_listDtrain(D)
 
     for ksample in range(0,len(D)):
 	    random.seed(10)
@@ -41,7 +42,6 @@ def _run(
     fit = process_multiSample.ini_multiSample(D, n_loadings)
 
     # step 2 fit model
-    listDtrain = process_multiSample.get_listDtrain(D)
 
     (pp := (output_dir / "models" / "pp")).mkdir(parents=True, exist_ok=True)
     fit = training_multiSample.train_model_mNSF(
