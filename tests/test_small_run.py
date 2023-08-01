@@ -1,10 +1,9 @@
 import pickle
+import random
 from pathlib import Path
 
 import click
 import pandas as pd
-
-import random
 
 from mNSF import process_multiSample, training_multiSample
 
@@ -31,12 +30,11 @@ def _run(
     D, X = load_data(data_dir, n_sample)
     listDtrain = process_multiSample.get_listDtrain(D)
 
-    for ksample in range(0,len(D)):
-	    random.seed(10)
-	    ninduced=round(D[ksample]['X'].shape[0] * 0.35)
-	    D_tmp=D[ksample]
-	    D[ksample]["Z"]=D_tmp['X'][random.sample(range(0, D_tmp['X'].shape[0]-1), ninduced) ,:]
-
+    for ksample in range(0, len(D)):
+        random.seed(10)
+        ninduced = round(D[ksample]["X"].shape[0] * 0.35)
+        D_tmp = D[ksample]
+        D[ksample]["Z"] = D_tmp["X"][random.sample(range(0, D_tmp["X"].shape[0] - 1), ninduced), :]
 
     # step 1 initialize model
     fit = process_multiSample.ini_multiSample(D, n_loadings)
@@ -44,9 +42,7 @@ def _run(
     # step 2 fit model
 
     (pp := (output_dir / "models" / "pp")).mkdir(parents=True, exist_ok=True)
-    fit = training_multiSample.train_model_mNSF(
-        fit, pp, listDtrain, D, legacy=legacy, num_epochs=epochs
-    )
+    fit = training_multiSample.train_model_mNSF(fit, pp, listDtrain, D, legacy=legacy, num_epochs=epochs)
     (output_dir / "list_fit_smallData.pkl").write_bytes(pickle.dumps(fit))
 
     # step 3 save results
@@ -73,7 +69,6 @@ def _run(
 @click.option("--n_sample", "-n", type=int, default=1)
 @click.option("--epochs", "-e", type=int, default=10)
 @click.option("--legacy", "-l", is_flag=True)
-
 def run_cli(
     data_dir: str | Path,
     output_dir: str | Path,
