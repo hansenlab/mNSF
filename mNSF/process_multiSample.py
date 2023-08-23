@@ -72,7 +72,7 @@ def get_listSampleID(list_D_):
 	
 		
 	
-def ini_multiSample(list_D_,L_, lik = 'poi'):
+def ini_multiSample(list_D_,L_, lik = 'nb'):
 	"""
 	do initialization for mNSF
 	"""
