@@ -21,7 +21,7 @@ def get_D(X,Y):
 	ad.layers = {"counts":ad.X.copy()} #store raw counts before normalization changes ad.X
 	pp.normalize_total(ad, inplace=True, layers=None, key_added="sizefactor")
 	pp.log1p(ad)
-	D,_ = preprocess.anndata_to_train_val(ad, layer="counts", train_frac=1.0,flip_yaxis=False)
+	D,_ = preprocess.anndata_to_train_val(ad, sz="mean", layer="counts", train_frac=1.0,flip_yaxis=False)
 	D["Z"]=D['X']
 	return D
 
@@ -32,7 +32,7 @@ def get_D_fromAnnData(ad):	# Same as get_D but starting from AnnData object
 	ad.layers = {"counts":ad.X.copy()} #store raw counts before normalization changes ad.X
 	pp.normalize_total(ad, inplace=True, layers=None, key_added="sizefactor")
 	pp.log1p(ad)
-	D,_ = preprocess.anndata_to_train_val(ad, layer="counts", train_frac=1.0,flip_yaxis=False)
+	D,_ = preprocess.anndata_to_train_val(ad, sz="mean", layer="counts", train_frac=1.0,flip_yaxis=False)
 	D["Z"]=D['X']
 	return D
 
@@ -164,7 +164,7 @@ def interpret_npf_v3(list_fit,list_X,S=10,**kwargs):
 
 
 
-def interpret_nonneg(factors,loadings,lda_mode=False,sort=True):
+def interpret_nonneg(factors,loadings,lda_mode=False,sort=False):
 
   """
   Rescale factors and loadings from a nonnegative factorization
@@ -190,7 +190,7 @@ def interpret_nonneg(factors,loadings,lda_mode=False,sort=True):
 
 
 
-def rescale_as_lda(factors,loadings,sort=True):
+def rescale_as_lda(factors,loadings,sort=False):
   """
   Rescale nonnegative factors and loadings matrices to be
   comparable to LDA:
