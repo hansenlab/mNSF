@@ -37,7 +37,7 @@ def _run(
         D[ksample]["Z"] = D_tmp["X"][random.sample(range(0, D_tmp["X"].shape[0] - 1), ninduced), :]
 
     # step 1 initialize model
-    fit = process_multiSample.ini_multiSample(D, n_loadings)
+    fit = process_multiSample.ini_multiSample(D, n_loadings, "nb")
 
     # step 2 fit model
 
