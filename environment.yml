@@ -13,7 +13,7 @@ dependencies:
   - pip
   - scanpy
   - squidpy
-  - tensorflow=2.13
+  - tensorflow>=2.11
   - tensorflow-probability=0.22.1
   - pip:
       - -e .
