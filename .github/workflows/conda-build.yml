@@ -43,7 +43,7 @@ jobs:
         shell: bash -el {0}
 
       - name: Notify Slack if failed
-        if: failure()
+        if: failure() && github.ref == 'refs/heads/main'
         id: slack
         uses: slackapi/slack-github-action@v1.24.0
         with:
