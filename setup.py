@@ -5,7 +5,7 @@ setup(
   version = '0.1',     
   license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
   description = 'multi-sample non-negative spatial factorization',   # Give a short description about your library
-  author = 'Yi Wang, Kyla Woyshner, Chaichontat Sriworarat, Loyal Goff, Genevieve Stein-O'Brien, Kasper D. Hansen',                   
+  author = "Yi Wang, Kyla Woyshner, Chaichontat Sriworarat, Loyal Goff, Genevieve Stein-O'Brien, Kasper D. Hansen",                   
   author_email = 'yiwangthu4@gmail.com',      
   url = 'https://github.com/hansenlab/mNSF/',   
   download_url = 'https://github.com/user/reponame/archive/v_01.tar.gz',    # I explain this later on
