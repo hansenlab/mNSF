@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
   name = 'mNSF',       
   packages = ['mNSF'],   
-  version = '0.1.1',     
+  version = '0.0.0',     
   license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
   description = 'multi-sample non-negative spatial factorization',   # Give a short description about your library
   author = "Yi Wang, Kyla Woyshner, Chaichontat Sriworarat, Loyal Goff, Genevieve Stein-O'Brien, Kasper D. Hansen",                   
@@ -10,7 +10,7 @@ setup(
   url = 'https://github.com/hansenlab/mNSF/',   
   download_url = 'https://github.com/user/reponame/archive/v_01.tar.gz',    # I explain this later on
   keywords = ['spatial', 'factorization', 'multi-sample'],   
-install_requires=[
+  install_requires=[
           'python==3.10','anndata', 'click', 'matplotlib', 'numpy', 'pandas', 'pip', 
           'scanpy', 'squidpy', 'tensorflow==2.13', 'tensorflow-probability==0.21'],
   classifiers=[
