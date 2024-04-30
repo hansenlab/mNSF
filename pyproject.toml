@@ -5,7 +5,7 @@ authors = [
 description = ""
 name = "mnsf"
 packages = [{include = "mNSF"}]
-version = "0.0.1"
+version = "0.1.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.2"
