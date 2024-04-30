@@ -26,6 +26,7 @@ The package should be available right away.
 
 <details>
   <summary>CPU only</summary>
+  
     ```sh
     conda install tensorflow
     ```
@@ -34,6 +35,7 @@ The package should be available right away.
 <details>
   <summary>GPU</summary>
     If you have a GPU and is operating in a Linux system, you can in the `mnsf` environment.
+  
     ```sh
     conda install tensorflow-gpu
     ```
