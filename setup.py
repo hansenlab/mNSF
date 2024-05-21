@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
   name = 'mNSF',       
   packages = ['mNSF'],   
-  version = '0.1.2',     
+  version = '0.1.3',     
   license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
   description = 'multi-sample non-negative spatial factorization',   #
   author = "Yi Wang, Kyla Woyshner, Chaichontat Sriworarat, Loyal Goff, Genevieve Stein-O'Brien, Kasper D. Hansen",                   
