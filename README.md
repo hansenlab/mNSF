@@ -40,3 +40,17 @@ The package should be available right away.
     conda install tensorflow-gpu
     
 </details>
+
+## Development
+
+This package is managed by `twine`. Assuming `twine` is installed in your python version, you build the distribution by
+```
+python setup.py sdist
+```
+inside the repository directory, and then you upload to PyPI by
+```
+twine upload dist/*
+```
+(requires an account on PyPI)
+
+##
