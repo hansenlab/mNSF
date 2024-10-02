@@ -258,6 +258,9 @@ hmkw = {"figsize": (4, 4), "bgcol": "white", "subplot_space": 0.1, "marker": "s"
 fig, axes = visualize.multiheatmap(list_D[0]["X"], Fplot, (1, 2), cmap="RdBu", **hmkw)
 ```
 
+![Alt text](image.png)
+
+
 Let's break this down:
 
 1. `Fplot = misc.t2np(list_fit[0].sample_latent_GP_funcs(list_D[0]["X"], S=3, chol=False)).T`:
@@ -314,4 +317,4 @@ As with any computational method, it's important to critically evaluate the resu
 
 By leveraging the power of mNSF, you can gain new insights into the spatial organization of gene expression across multiple samples, potentially revealing complex patterns of tissue organization and function that may not be apparent from single-sample analyses.
 
-![Alt text](image.png)
+
