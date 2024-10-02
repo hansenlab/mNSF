@@ -308,6 +308,8 @@ When interpreting your results, consider the following:
 Remember that the choice of parameters, particularly the number of factors (L), can significantly impact your results. It may be beneficial to run the analysis with different numbers of factors and compare the outcomes.
 
 For more advanced usage, including parameter tuning, interpretation of results, and integration with other analysis pipelines, please refer to the full documentation and the original paper describing the method.
+![Alt text](image.png)
+
 
 As with any computational method, it's important to critically evaluate the results in the context of your biological question and to validate key findings through independent methods when possible.
 
