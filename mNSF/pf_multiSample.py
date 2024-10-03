@@ -3,13 +3,28 @@
 """
 (spatial/temporal) Process Factorization base class
 
+This class implements a multi-sample non-negative spatial factorization model.
+It's designed to analyze spatial transcriptomics data from multiple samples
+without the need for spatial alignment. The model uses Gaussian Processes (GPs)
+to capture spatial dependencies and variational inference for tractable computation.
+
+Key features:
+- Handles multiple samples simultaneously
+- Supports non-negative factorization
+- Uses inducing points for scalable GP inference
+- Allows for different likelihoods (Poisson, Gaussian)
+
 @author: Yi Wang based on earlier work by Will Townes for the NSF package. 
 """
+
+# Import necessary libraries
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 from os import path
 from math import ceil
+
+# Set up TensorFlow Probability aliases for convenience
 from tensorflow import linalg as tfl
 from sklearn.decomposition import TruncatedSVD
 from sklearn.linear_model import LinearRegression
@@ -21,6 +36,7 @@ tfb = tfp.bijectors
 tv = tfp.util.TransformedVariable
 tfk = tfp.math.psd_kernels
 
+# Set default data type and random number generator
 dtp = "float32"
 rng = np.random.default_rng()
 
@@ -29,74 +45,86 @@ class ProcessFactorization_multiSample(tf.Module):
                nugget=1e-5, length_scale=0.1, disp="default",
                nonneg=False, isotropic=True, feature_means=None, **kwargs):
     """
-    Non-negative process factorization
+        Non-negative process factorization
 
-    Parameters
-    ----------
-    J : integer scalar
-        Number of features in the multivariate outcome.
-    L : integer scalar
-        Number of desired latent Gaussian processes.
-    T : integer scalar
-        Number of desired non-spatial latent factors
-    Z : 2D numpy array
-        Coordinates of inducing point locations in input space.
-        First dimension: 'M' is number of inducing points.
-        Second dimension: 'D' is dimensionality of input to GP.
-        More inducing points= slower but more accurate inference.
-    lik: likelihood (Poisson or Gaussian)
-    disp: overdispersion parameter initialization.
-    --for Gaussian likelihood, the scale (stdev) parameter
-    --for negative binomial likelihood, the parameter phi such that
-      var=mean+phi*mean^2, i.e. phi->0 corresponds to Poisson, phi=1 to geometric
-    --for Poisson likelihood, this parameter is ignored and set to None
-    psd_kernel : an object of class PositiveSemidefiniteKernel, must accept a
-        length_scale parameter.
-    feature_means : if input data is centered (for lik='gau', nonneg=False)
+        This model factorizes spatial gene expression data into latent factors
+        and spatial processes. It can handle multiple samples simultaneously.
+
+        Parameters:
+        - J: Number of features in the multivariate outcome (e.g., number of genes)
+        - L: Number of desired latent Gaussian processes (factors)
+        - Z: Coordinates of inducing point locations in input space
+             Shape: (M, D) where M is number of inducing points, D is spatial dimensions
+        - nsample: Number of samples in the dataset
+        - lik: Likelihood model ("poi" for Poisson, "gau" for Gaussian)
+        - psd_kernel: Positive semidefinite kernel function for GP
+                      Default is Matérn 3/2, which balances smoothness and flexibility
+        - nugget: Small value added to diagonal of kernel matrix for numerical stability
+        - length_scale: Initial length scale for the kernel, controls smoothness of GP
+        - disp: Overdispersion parameter initialization (for negative binomial likelihood)
+        - nonneg: If True, use non-negative factorization (constrain factors to be positive)
+        - isotropic: If True, use isotropic kernel (same length scale in all dimensions)
+        - feature_means: Feature means for centered input data (used only for Gaussian likelihood)
     """
     super().__init__(**kwargs)
-    # self.is_spatial=True
+    # Store model parameters
     self.lik = lik
     self.isotropic=isotropic
-    M,D = Z.shape
+    M,D = Z.shape # M: number of inducing points, D: dimensionality of input space
     self.Z = tf.Variable(Z, trainable=False, dtype=dtp, name="inducing_points")
     self.nonneg = tf.Variable(nonneg, trainable=False, name="is_non_negative")
-    #variational parameters
+    # Initialize variational parameters
     with tf.name_scope("variational"):
+      # Delta represents the mean of the variational distribution q(u)
+      # Shape: (L, M) - one mean vector for each latent GP at each inducing point
       self.delta = tf.Variable(rng.normal(size=(L,M)), dtype=dtp, name="mean") #LxM
       #_Omega_tril = self._init_Omega_tril(L,M,nugget=nugget)
       # _Omega_tril = .01*tf.eye(M,batch_shape=[L],dtype=dtp)
       #self.Omega_tril=tv(_Omega_tril, tfb.FillScaleTriL(), dtype=dtp, name="covar_tril") #LxMxM
-    #GP hyperparameters
+    # Initialize GP hyperparameters
     with tf.name_scope("gp_mean"):
       if self.nonneg:
+        # For non-negative factorization, use log-normal approximation to Dirichlet
+        # This ensures that the factors remain positive
         prior_mu, prior_sigma = misc.lnormal_approx_dirichlet(max(L,1.1))
         self.beta0 = tf.Variable(prior_mu*tf.ones((L*nsample,1)), dtype=dtp,
                                  name="intercepts")
       else:
+        # For unconstrained factorization, initialize intercepts to zero
         self.beta0 = tf.Variable(tf.zeros((L*nsample,1)), dtype=dtp, name="intercepts") #L
+      # Initialize slopes (coefficients) to zero
+      # Shape: (L*nsample, D) - allows for sample-specific spatial trends
       self.beta = tf.Variable(tf.zeros((L*nsample,D)), dtype=dtp, name="slopes") #LxD
+    
+    # Initialize GP kernel parameters
     with tf.name_scope("gp_kernel"):
+      # Nugget term for numerical stability
       self.nugget = tf.Variable(nugget, dtype=dtp, trainable=False, name="nugget")
+      # Amplitude is constrained to be positive using a softplus transformation
       self.amplitude = tv(np.tile(1.0,[L]), tfb.Softplus(), dtype=dtp, name="amplitude")
       self._ls0 = length_scale #store for .reset() method
       if self.isotropic:
+        # For isotropic kernel, use a single length scale per latent dimension
         self.length_scale = tv(np.tile(self._ls0,[L]), tfb.Softplus(),
                                dtype=dtp, name="length_scale")
       else:
+        # For anisotropic kernel, use separate length scales for each input dimension
         self.scale_diag = tv(np.tile(np.sqrt(self._ls0),[L,D]),
                              tfb.Softplus(), dtype=dtp, name="scale_diag")
-    #Loadings weights
+    # Initialize loadings weights (W)
     if self.nonneg:
+      # For non-negative factorization, initialize W with positive values
+      # Shape: (J, L) - each column represents a latent factor
       self.W = tf.Variable(rng.exponential(size=(J,L)), dtype=dtp,
                            constraint=misc.make_nonneg, name="loadings") #JxL
     else:
+      # For unconstrained factorization, initialize W with normal distribution
       self.W = tf.Variable(rng.normal(size=(J,L)), dtype=dtp, name="loadings") #JxL
     self.psd_kernel = psd_kernel #this is a class, not yet an object
     #likelihood parameters, set defaults
     self._disp0 = disp
     self._init_misc()
-    #self.Kuu_chol = tf.Variable(self.eval_Kuu_chol(self.get_kernel()), dtype=dtp, trainable=False)
+    # Store feature means for Gaussian likelihood with centered data
     if self.lik=="gau" and not self.nonneg:
       self.feature_means = feature_means
     else:
@@ -120,7 +148,8 @@ class ProcessFactorization_multiSample(tf.Module):
 
   def _init_misc(self):
     """
-    misc initialization shared between __init__ and reset
+      Initialize miscellaneous parameters and set up caching for kernel computations
+      This method is called at the end of __init__ to finalize the setup
     """
     J = self.W.shape[0]
     self.disp = likelihoods.init_lik(self.lik, J, disp=self._disp0, dtp=dtp)
@@ -133,17 +162,21 @@ class ProcessFactorization_multiSample(tf.Module):
       self.kernel = tfk.FeatureScaled(self.psd_kernel(amplitude=self.amplitude), self.scale_diag)
 
   def get_dims(self):
+    """Return the number of latent dimensions (factors)"""
     return self.W.shape[1]
 
   def get_loadings(self):
+    """Return the loadings matrix W as a numpy array"""
     return self.W.numpy()
 
   def set_loadings(self,Wnew):
+    """Set the loadings matrix W to a new value"""
     self.W.assign(Wnew,read_value=False)
 
   def init_loadings(self,Y,list_X,list_Z,X=None,sz=1,**kwargs):
     """
-    Use either PCA or NMF to initialize the loadings matrix from data Y
+      Initialize the loadings matrix from data Y
+      Uses either PCA or NMF depending on whether non-negative constraint is applied
     """
     if self.nonneg:
       init_npf_with_nmf(self,Y,list_X,list_Z,X=X,sz=sz,**kwargs)
@@ -408,9 +441,22 @@ class ProcessFactorization_multiSample(tf.Module):
 
 def smooth_spatial_factors(F,Z,list_X,list_Z,X=None):
   """
-  F: real-valued factors (ie on the log scale for NPF)
-  Z: inducing point locations
-  X: spatial coordinates
+    Smooth spatial factors using linear regression and K-nearest neighbors
+    
+    This function is used to initialize the spatial factors in a way that
+    respects the spatial structure of the data.
+    
+    Parameters:
+    - F: Real-valued factors (on the log scale for non-negative factorization)
+    - Z: Inducing point locations
+    - list_X: List of spatial coordinates for each sample
+    - list_Z: List of inducing point locations for each sample
+    - X: Combined spatial coordinates (optional)
+    
+    Returns:
+    - U: Smoothed factors at inducing points
+    - beta0: Intercepts from linear regression
+    - beta: Slopes from linear regression
   """
   M=0
   for Z_tmp in list_Z:
@@ -494,6 +540,24 @@ def smooth_spatial_factors(F,Z,list_X,list_Z,X=None):
 
 def init_npf_with_nmf(fit, Y, list_X, list_Z, X=None, sz=1, pseudocount=1e-2, factors=None,
                       loadings=None, shrinkage=0.2):
+  """
+    Initialize non-negative process factorization with non-negative matrix factorization
+    
+    This function is used to provide a good starting point for the optimization
+    of the non-negative spatial factorization model.
+    
+    Parameters:
+    - fit: ProcessFactorization_multiSample object
+    - Y: Data matrix (genes x spots)
+    - list_X: List of spatial coordinates for each sample
+    - list_Z: List of inducing point locations for each sample
+    - X: Combined spatial coordinates (optional)
+    - sz: Size factors (e.g., total counts per spot)
+    - pseudocount: Small value added to avoid log(0)
+    - factors: Initial factors (optional)
+    - loadings: Initial loadings (optional)
+    - shrinkage: Shrinkage parameter for regularization
+  """
   L = fit.W.shape[1]
   # M = fit.Z.shape[0] #number of inducing points
   kw = likelihoods.choose_nmf_pars(fit.lik)
