@@ -317,4 +317,6 @@ As with any computational method, it's important to critically evaluate the resu
 
 By leveraging the power of mNSF, you can gain new insights into the spatial organization of gene expression across multiple samples, potentially revealing complex patterns of tissue organization and function that may not be apparent from single-sample analyses.
 
-
+```plaintext
+Hello, world!
+This is a sample output.
