@@ -112,17 +112,27 @@ def truncate_history(loss_history, epoch):
     loss_history[i] = loss_history[i][:cutoff]
   return loss_history
 
+# Class to check convergence of the model
 class ConvergenceChecker(object):
   def __init__(self,span,dtp="float64"):
+    """
+    Initialize the ConvergenceChecker with polynomial basis functions.
+        
+    Args:
+        span: Number of recent observations to consider
+        dtp: Data type for computations
+    """
     x = np.arange(span,dtype=dtp)
     x-= x.mean()
     X = np.column_stack((np.ones(shape=x.shape),x,x**2,x**3))
     self.U = np.linalg.svd(X,full_matrices=False)[0]
 
-  def smooth(self,y):
+  def smooth(self,y): 
+    """Apply smoothing to the input vector."""
     return self.U@(self.U.T@y)
 
-  def subset(self,y,idx=-1):
+  def subset(self,y,idx=-1): 
+    """Extract a subset of the input vector."""
     span = self.U.shape[0]
     lo = idx-span+1
     if idx==-1:
@@ -131,6 +141,7 @@ class ConvergenceChecker(object):
       return y[lo:(idx+1)]
 
   def relative_change(self,y,idx=-1,smooth=True):
+    """Calculate the relative change in the input vector."""
     y = self.subset(y,idx=idx)
     if smooth:
       y = self.smooth(y)
@@ -141,6 +152,7 @@ class ConvergenceChecker(object):
 
     
   def converged(self,y,tol=1e-4,**kwargs):
+    """Check if the relative change is below the tolerance."""
     return abs(self.relative_change(y,**kwargs)) < tol
 
   
@@ -188,7 +200,15 @@ class ModelTrainer(object): #goal to change this to tf.module?
   def __init__(self, model, lr=0.01, pickle_path=None, max_to_keep=3, legacy=False, **kwargs):
     #ckpt_path="/tmp/tf_ckpts", #use temporary directory instead
     """
-    **kwargs are passed to tf.optimizers.[Optimizer] constructor
+    Initialize the ModelTrainer.
+        
+    Args:
+        model: The mNSF model to be trained
+        lr: Initial learning rate
+        pickle_path: Path to save pickled models
+        max_to_keep: Maximum number of checkpoints to keep
+        legacy: Whether to use legacy TensorFlow optimizers
+        **kwargs: Additional arguments for the optimizer
     """
     self.loss = {"train":np.array([np.nan]), "val":np.array([np.nan])}
     self.model = model
