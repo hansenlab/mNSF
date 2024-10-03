@@ -213,6 +213,75 @@ This code does the following:
 
 The number of induced points (15% here) is a trade-off between computational efficiency and accuracy. You might need to adjust this percentage based on your dataset size and available computational resources.
 
+### 5.3 Choose the number of factors to be used
+
+Selecting the optimal number of factors in factor analysis, including mNSF, is a complex task without a universal solution. This challenge stems from the trade-off between model simplicity and explanatory power. Too few factors may oversimplify the data, while too many can lead to overfitting. The difficulty is exacerbated by the unknown true number of underlying factors, which varies between data sets and research contexts.
+
+Different statistical criteria often provide conflicting recommendations, and their effectiveness can depend on the specific data set. Researchers must balance statistical considerations with domain knowledge and practical constraints such as interpretability and computational resources.
+
+In the context of mNSF, we use the goodness-of-fit Poisson deviance as one metric to help guide the selection of the number of factors. However, it's important to consider this metric in conjunction with other considerations.
+
+The following code calculates the Poisson deviance for different numbers of factors across all samples:
+
+```python
+# get goodness-of-fit poisson deviance for each sample for each factor
+for L in [4,8,12,16,20]:# finished running
+	list_fit = process_multiSample.ini_multiSample(list_D, L, "nb")
+	vec_dev = 0
+	for ksample in range(0,nsample):
+		dev_mnsf = visualize.gof(list_fit[ksample],list_D[ksample],Dval=None,S=10,plot=False)
+		vec_dev= vec_dev + dev_mnsf['tr']['mean']
+	print("L="+str(L))
+	print("deviance="+str(vec_dev))
+	print("")
+```
+
+This code does the following:
+1. It iterates over different numbers of factors (L): 4, 8, 12, 16, and 20.
+2. For each L, it initializes the mNSF model using `process_multiSample.ini_multiSample()`.
+3. It then calculates the goodness-of-fit Poisson deviance for each sample using `visualize.gof()`.
+4. The deviances are summed across all samples.
+5. Finally, it prints the total deviance for each value of L.
+
+Here are the results:
+
+```plaintext
+L=4
+deviance=2.059812903404236
+L=8
+deviance=2.077596068382263
+L=12
+deviance=2.089587688446045
+L=16
+deviance=2.1100269556045532
+L=20
+deviance=2.1349778175354004
+```
+
+Interpretation of the results:
+
+- The differences in deviance between different L values are relatively small, indicating that the model's fit doesn't drastically change with increasing factors.
+
+Choosing the number of factors:
+
+1. While the deviance suggests L=4 might be optimal, this should not be the sole criterion for selection.
+2. Consider the biological interpretability of the factors. A slightly higher number of factors might reveal more biologically meaningful patterns, even if the statistical fit is slightly worse.
+3. Evaluate the trade-off between model complexity and explanatory power. More factors increase the model's ability to capture complex patterns but also increase the risk of overfitting.
+4. Take into account the computational resources required. Higher numbers of factors will increase computational time and memory usage.
+5. Consider the specific context of your research. The "optimal" number of factors may vary depending on the biological system being studied and the research questions being asked.
+
+Other possible ways for selecting the number of factors:
+
+1. Visualize the spatial patterns for different numbers of factors to see how they change and assess their biological relevance.
+2. Examine the gene loadings for different numbers of factors to see if additional factors reveal new, biologically meaningful gene sets.
+3. If possible, validate the results against known biology or independent experiments to see which number of factors best captures the true underlying biology.
+4. Consider using cross-validation or other model selection techniques to assess the model's performance on held-out data.
+5. Consult with domain experts to evaluate the biological plausibility and interpretability of the factors identified with different L values.
+
+The "best" number of factors often involves a nuanced balance between statistical fit, biological interpretability, computational resources, and research objectives. It's often helpful to try a few different values and compare the results before making a final decision. The process may involve iterative refinement and integration of multiple lines of evidence.
+
+
+
 ## 6. Model Initialization
 
 Now we're ready to initialize the mNSF model:
