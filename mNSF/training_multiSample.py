@@ -342,11 +342,8 @@ class ModelTrainer(object):
     cvg = 0 #increment each time we think it has converged
     cvg_normalized=0
     cc = ConvergenceChecker(span)
-    #epoch=0
     while (not self.converged) and (self.epoch < num_epochs):
       epoch_loss = tf.keras.metrics.Mean()
-      #epoch=epoch+1
-      #epoch=self.epoch 
       chol=(self.epoch % kernel_hp_update_freq==0)
       trl=0.0
       nsample=len(list_Dtrain)
@@ -357,13 +354,7 @@ class ModelTrainer(object):
           epoch_loss.update_state(list_tro[ksample].model.train_step( D, list_tro[ksample].optimizer, list_tro[ksample].optimizer_k,
                                    Ntot=list_tro[ksample].model.delta.shape[1], chol=True))
           trl = trl + epoch_loss.result().numpy()
-          #print("ksample")
-          #print(ksample)
-          #print(D["X"].shape)
-          #print(list_tro[ksample].model.delta.shape[1])
-          #print(tf.config.experimental.get_memory_info('GPU:0'))
       W_updated=list_tro[ksample].model.W-list_tro[ksample].model.W
-      #print(trl)
       for ksample in range(0,nsample):
       	W_updated = W_updated+ (list_tro[ksample].model.W / nsample)
       self.epoch.assign_add(1)
@@ -486,21 +477,14 @@ class ModelTrainer(object):
           if verbose:
             msg = "{:04d} numerical instability (try {:d})"
             print(msg.format(self.epoch.numpy(),tries))
-          #new_epoch = self.find_checkpoint(ckpt_freq, back=1, epoch0=epoch0) #int  #modofied
           new_epoch=0
-          self.epoch.assign(0)#modofied
-          #new_epoch=0
-          #self.epoch=0
+          self.epoch.assign(0)
           ckpt = path.join(ckpth,"ckpt-{}".format(new_epoch))
-          # self.reset(lr_reduce=lr_reduce)
           ptic,wtic = self.restore(ckpt)
           nsample=len(list_Dtrain)
-          #print("nsample")
-          #print(nsample)
           for ksample in range(0,nsample):
             with open('fit_'+ str(ksample+1) +'_restore.pkl', 'rb') as inp:
               list_tro[ksample].model = pickle.load(inp)  
-            #save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
           lr_old,lr_new=self.multiply_lr(lr_reduce)
           if verbose:
             msg = "{:04d} learning rate: {:.2e}"
