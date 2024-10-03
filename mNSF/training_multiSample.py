@@ -213,6 +213,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
     self.loss = {"train":np.array([np.nan]), "val":np.array([np.nan])}
     self.model = model
     self.legacy = legacy
+    # Initialize optimizers (main and kernel hyperparameter optimizer)
     if self.legacy: #need to use legacy optimizer with tensorflow v2.12.0 +
       self.optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=lr, **kwargs)
       self.optimizer_k = tf.keras.optimizers.legacy.Adam(learning_rate=0.01*lr, **kwargs)
@@ -221,12 +222,11 @@ class ModelTrainer(object): #goal to change this to tf.module?
       self.optimizer = tf.optimizers.Adam(learning_rate=lr, **kwargs)
       #optimizer for kernel hyperparams, does nothing for nonspatial models
       self.optimizer_k = tf.optimizers.Adam(learning_rate=0.01*lr, **kwargs)
-
+    # Initialize training variables
     self.epoch = tf.Variable(0,name="epoch")
-    # self.tries = tf.Variable(0,name="number of tries")
     self.ptime = tf.Variable(0.0,name="elapsed process time")
     self.wtime = tf.Variable(0.0,name="elapsed wall time")
-    # self.ckpt_counter = tf.Variable(0,name="checkpoint counter")
+    # Set up checkpointing
     self.ckpt = tf.train.Checkpoint(model=self.model, optimizer=self.optimizer,
                                     optimizer_k=self.optimizer_k,
                                     epoch=self.epoch, ptime=self.ptime,
