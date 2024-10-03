@@ -139,7 +139,7 @@ def get_listDtrain(list_D_, nbatch=1):
         list_Dtrain.append(D_train)
     return list_Dtrain
 
-def get_sampleID(list_D_):
+def get_listSampleID(list_D_):
     """
     Get the index of the sampleID for each spot.
     
