@@ -314,7 +314,8 @@ class ModelTrainer(object):
                            ptic = process_time(), wtic = time(), ckpt_freq=50, test_cvdNorm=False,
                            kernel_hp_update_freq=10, status_freq=10,
                            span=100, tol=1e-4, tol_norm = 0.4, pickle_freq=None, check_convergence: bool = True):
-    """train_step
+    """
+    train_step
     Dtrain, Dval : tensorflow Datasets produced by prepare_datasets_tf func
     ckpt_mgr must store at least 2 checkpoints (max_to_keep)
     Ntr: total number of training observations, needed to adjust KL term in ELBO
