@@ -319,4 +319,3 @@ def rescale_as_lda(factors, loadings, sort=False):
         return W[:, o], eF[:, o], eFsum
     else:
         return W, eF, eFsum, wsum
-
