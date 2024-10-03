@@ -199,6 +199,7 @@ class ModelTrainer(object):
         self.set_pickle_path(pickle_path)
         self.converged = False
 
+
   def multiply_lr(self, factor):
     """
     Multiply the learning rate of both optimizers by a given factor.
