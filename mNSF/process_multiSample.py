@@ -1,4 +1,32 @@
+"""
+mNSF Utility Functions
 
+This file contains utility functions for the multi-sample Non-negative Spatial Factorization (mNSF) method.
+mNSF is a computational approach for analyzing spatial transcriptomics data across multiple samples
+without the need for spatial alignment.
+
+Key components:
+1. Data Preprocessing: Functions to format and normalize spatial transcriptomics data.
+2. Model Initialization: Setup of the mNSF model for multiple samples.
+3. Data Handling: Creation of TensorFlow datasets for efficient training.
+4. Result Interpretation: Functions to interpret and rescale the factorization results.
+
+The main workflow typically involves:
+1. Formatting the input data using get_D() or get_D_fromAnnData().
+2. Initializing the mNSF model with ini_multiSample().
+3. Preparing the data for training with get_listDtrain().
+4. After model fitting (not included in this file), interpreting results with interpret_npf_v3().
+
+This file is part of the larger mNSF package and is designed to work in conjunction
+with other components like pf_multiSample and training_multiSample.
+
+@author: Yi Wang based on earlier work by Will Townes for the NSF package. Date: [Current Date]
+
+For more information on the mNSF method, please refer to the accompanying publication
+
+"""
+
+# Import necessary libraries
 from tensorflow_probability import math as tm
 from mNSF import pf_multiSample,training_multiSample
 from mNSF.NSF import misc,pf,preprocess,postprocess
@@ -8,48 +36,105 @@ import numpy as np
 from tensorflow.data import Dataset
 import pickle
 
+# Define the kernel function for Gaussian Process
+# MaternThreeHalves is a specific covariance function used in Gaussian processes
 ker = tm.psd_kernels.MaternThreeHalves
 
 
 def get_D(X,Y):	
 	"""
-	get the formated data as a directory
+	Format the data as a dictionary for processing.
+    
+    This function takes spatial coordinates and gene expression data,
+    normalizes them, and prepares them for further analysis.
+    
+    Args:
+    X: Spatial coordinates of the spots/cells
+    Y: Gene expression data (genes x spots/cells)
+    
+    Returns:
+    D: Formatted data dictionary containing normalized data and metadata
 	"""
+	# Rescale spatial coordinates to a standard range
 	X = preprocess.rescale_spatial_coords(X)
 	X=X.to_numpy()
+
+	# Create an AnnData object, which is a standard format for single-cell data
 	ad = AnnData(Y,obsm={"spatial":X})
-	ad.layers = {"counts":ad.X.copy()} #store raw counts before normalization changes ad.X
+
+	# Store raw counts before normalization changes ad.X
+	ad.layers = {"counts":ad.X.copy()} 
+
+	# Normalize the total counts per cell
 	pp.normalize_total(ad, inplace=True, layers=None, key_added="sizefactor")
+	
+	# Log-transform the data
 	pp.log1p(ad)
+
+	# Convert AnnData to a dictionary format suitable for training
 	D,_ = preprocess.anndata_to_train_val(ad, sz="mean", layer="counts", train_frac=1.0,flip_yaxis=False)
+
+	# Add spatial coordinates to the dictionary
 	D["Z"]=D['X']
 	return D
 
-def get_D_fromAnnData(ad):	# Same as get_D but starting from AnnData object
+def get_D_fromAnnData(ad):	
 	"""
-	get the formated data as a directory
+	Format the data as a dictionary starting from an AnnData object.
+    
+    This function is similar to get_D, but it starts with an AnnData object
+    instead of separate X and Y matrices.
+    
+    Args:
+    ad: AnnData object containing gene expression and spatial information
+    
+    Returns:
+    D: Formatted data dictionary containing normalized data and metadata
 	"""
-	ad.layers = {"counts":ad.X.copy()} #store raw counts before normalization changes ad.X
+	# Store raw counts before normalization changes ad.X
+	ad.layers = {"counts":ad.X.copy()} 
+	
+	# Normalize the total counts per cell
 	pp.normalize_total(ad, inplace=True, layers=None, key_added="sizefactor")
+	
+	# Log-transform the data
 	pp.log1p(ad)
+	
+	# Convert AnnData to a dictionary format suitable for training
 	D,_ = preprocess.anndata_to_train_val(ad, sz="mean", layer="counts", train_frac=1.0,flip_yaxis=False)
+	
+	# Add spatial coordinates to the dictionary
 	D["Z"]=D['X']
 	return D
 
 
 def get_listDtrain(list_D_,nbatch=1):
 	"""
-	get the training data (here using all data as training data)
+	Prepare the training data by creating TensorFlow Datasets.
+    
+    This function converts the data dictionaries into TensorFlow Dataset objects,
+    which are efficient for training machine learning models.
+    
+    Args:
+    list_D_: List of data dictionaries, one for each sample
+    nbatch: Number of batches to split the data into (default is 1)
+    
+    Returns:
+    list_Dtrain: List of TensorFlow Datasets for training
 	"""
 	list_Dtrain=list()
 	nsample=len(list_D_)
 	for ksample in range(0,nsample):
 		D=list_D_[ksample]
-		Ntr = D["Y"].shape[0]
+		Ntr = D["Y"].shape[0] # Number of observations in this sample
+
+		# Convert dictionary to TensorFlow Dataset
 		Dtrain = Dataset.from_tensor_slices(D)
+		
+		# Batch the data
 		if (nbatch==1): D_train = Dtrain.batch(round(Ntr)+1)
 		else:
-			Ntr_batch=round(Ntr/nbatch)+1
+			Ntr_batch=round(Ntr/nbatch)+1 # Number of observations in this sample
 			D_train = Dtrain.batch(round(Ntr_batch)+1)
 		list_Dtrain.append(D_train)
 	return list_Dtrain
@@ -57,7 +142,15 @@ def get_listDtrain(list_D_,nbatch=1):
 
 def get_listSampleID(list_D_):
 	"""
-	get the index of the sampleID for each spot
+	Get the index of the sampleID for each spot.
+    
+    This function assigns a unique identifier to each spot/cell across all samples.
+    
+    Args:
+    list_D_: List of data dictionaries, one for each sample
+    
+    Returns:
+    list_sampleID: List of arrays, each containing the sample IDs for a sample
 	"""
 	list_sampleID=list()   
 	index_=0      
@@ -74,7 +167,20 @@ def get_listSampleID(list_D_):
 	
 def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
 	"""
-	do initialization for mNSF
+	Initialize mNSF (multi-sample Non-negative Spatial Factorization).
+    
+    This function sets up the initial state for the mNSF model, including
+    creating ProcessFactorization objects for each sample and initializing
+    their parameters.
+    
+    Args:
+    list_D_: List of data dictionaries, one for each sample
+    L_: Number of factors to use in the factorization
+    lik: Likelihood function ('nb' for negative binomial)
+    disp: Dispersion parameter for the negative binomial distribution
+    
+    Returns:
+    list_fit_: List of initialized ProcessFactorization objects
 	"""
 	list_X=list()
 	list_Z=list()
@@ -138,7 +244,14 @@ def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
 
 def save_object(obj, filename):
     """
-    save object to disk
+    ave object to disk using pickle.
+    
+    This function serializes a Python object and saves it to a file,
+    allowing it to be loaded later.
+    
+    Args:
+    obj: Python object to save
+    filename: Name of the file to save the object to
     """
     with open(filename, 'wb') as outp:  # Overwrites any existing file.
         pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
@@ -148,9 +261,19 @@ def save_object(obj, filename):
         
 def interpret_npf_v3(list_fit,list_X,S=10,**kwargs):
   """
-  fit: object of type PF with non-negative factors
-  X: spatial coordinates to predict on
-  returns: interpretable loadings W, factors eF, and total counts vector
+  	Interpret the non-negative process factorization results.
+    
+    This function samples from the learned Gaussian processes to generate
+    interpretable factors and loadings.
+    
+    Args:
+    list_fit: List of fitted ProcessFactorization objects
+    list_X: List of spatial coordinates for each sample
+    S: Number of samples to draw from the Gaussian processes
+    **kwargs: Additional keyword arguments to pass to interpret_nonneg
+    
+    Returns:
+    Dictionary containing interpretable loadings W, factors eF, and total counts vector
   """
   nsample=len(list_fit)
   for ksample in range(0,nsample):
@@ -167,19 +290,19 @@ def interpret_npf_v3(list_fit,list_X,S=10,**kwargs):
 def interpret_nonneg(factors,loadings,lda_mode=False,sort=False):
 
   """
-  Rescale factors and loadings from a nonnegative factorization
-  to improve interpretability. Two possible rescalings:
+  	Rescale factors and loadings from a nonnegative factorization
+    to improve interpretability. Two possible rescalings:
 
-  1. Soft clustering of observations (lda_mode=True):
-  Rows of factor matrix sum to one, cols of loadings matrix sum to one
-  Returns a dict with keys: "factors", "loadings", and "factor_sums"
-  factor_sums is the "n" in the multinomial
-  (ie the sum of the counts per observations)
+    1. Soft clustering of observations (lda_mode=True):
+    Rows of factor matrix sum to one, cols of loadings matrix sum to one
+    Returns a dict with keys: "factors", "loadings", and "factor_sums"
+    factor_sums is the "n" in the multinomial
+    (ie the sum of the counts per observations)
 
-  2. Soft clustering of features (lda_mode=False):
-  Rows of loadings matrix sum to one, cols of factors matrix sum to one
-  Returns a dict with keys: "factors", "loadings", and "feature_sums"
-  feature_sums is similar to an intercept term for each feature
+    2. Soft clustering of features (lda_mode=False):
+    Rows of loadings matrix sum to one, cols of factors matrix sum to one
+    Returns a dict with keys: "factors", "loadings", and "feature_sums"
+    feature_sums is similar to an intercept term for each feature
   """
   if lda_mode:
     W,eF,eFsum,Wsum = rescale_as_lda(factors,loadings,sort=sort)##!!!!
@@ -192,9 +315,22 @@ def interpret_nonneg(factors,loadings,lda_mode=False,sort=False):
 
 def rescale_as_lda(factors,loadings,sort=False):
   """
-  Rescale nonnegative factors and loadings matrices to be
-  comparable to LDA:
-  Rows of factor matrix sum to one, cols of loadings matrix sum to one
+  Rescale nonnegative factors and loadings matrices to be comparable to LDA.
+    
+    This function normalizes the factors and loadings so that:
+    - Rows of the factor matrix sum to one
+    - Columns of the loadings matrix sum to one
+    
+    Args:
+    factors: Factor matrix (spots x factors)
+    loadings: Loadings matrix (genes x factors)
+    sort: If True, sort the factors and loadings by total magnitude
+    
+    Returns:
+    W: Rescaled loadings
+    eF: Rescaled factors
+    eFsum: Sum of factors before normalization (interpretable as total counts)
+    wsum: Sum of loadings before normalization
   """
   W = postprocess.deepcopy(loadings)
   eF = postprocess.deepcopy(factors)
