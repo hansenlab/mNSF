@@ -286,19 +286,55 @@ Let's break this down:
 This will produce a figure with two heatmaps, one for each factor, showing how these factors vary across the spatial dimensions of your sample.
 
 ## 9. Calculate Moran's I for each factor
+
+After obtaining the spatial factors from mNSF, it's important to quantify how spatially structured these factors are. One way to do this is by calculating Moran's I statistic for each factor. Moran's I is a measure of spatial autocorrelation, which tells us whether similar values tend to cluster together in space.
+
+Moran's I ranges from -1 to +1:
+- Values close to +1 indicate strong positive spatial autocorrelation (clustering of similar values)
+- Values close to -1 indicate strong negative spatial autocorrelation (dispersion of similar values)
+- Values near 0 suggest random spatial distribution
+
+Here's the code to calculate Moran's I for each factor:
+
 ```python
 for i in range(L):
     I, p_value = calculate_morans_i(list_D[0]["X"], Fplot[:, i])
     print(f"Factor {i+1} - Moran's I: {I:.4f}, p-value: {p_value:.4f}")
 ```
-```plaintext
+
+This code loops through each factor, calculates Moran's I using the spatial coordinates and factor values, and prints the results. The `calculate_morans_i` function returns both the Moran's I statistic and its associated p-value.
+
+Here are the results for our two factors:
+
+```
 Factor 1 - Moran's I: 0.1983, p-value: 0.0010
 Factor 2 - Moran's I: 0.1776, p-value: 0.0010
 ```
 
+Interpretation of the results:
+
+1. Both factors show positive Moran's I values, indicating that there is some degree of spatial clustering in both factors. Factor 1 (0.1983) shows slightly stronger spatial autocorrelation than Factor 2 (0.1776).
+
+2. The p-values for both factors are very low (0.0010), which is well below the conventional significance threshold of 0.05. This suggests that the observed spatial patterns in both factors are statistically significant and unlikely to have occurred by chance.
+
+3. While both factors show significant spatial structure, the Moran's I values are relatively modest (both less than 0.2). This indicates that while there is detectable spatial structure, it's not extremely strong. This could mean that the spatial patterns are subtle or that they're mixed with some degree of randomness.
+
+4. The similarity in Moran's I values between the two factors suggests that they have comparable levels of spatial structure. This could indicate that both factors are capturing meaningful biological patterns at similar spatial scales.
+
+These results support the validity of the mNSF analysis, as they demonstrate that the identified factors indeed capture statistically significant spatial patterns in the data. However, the modest Moran's I values also suggest that these patterns are complex and may benefit from further biological interpretation.
+
+## 9. Further Analysis
+
+To gain more insights, you might consider:
+1. Visualizing these factors spatially (as we did in the previous step) to understand the nature of the clustering.
+2. Examining the gene loadings for each factor to interpret their biological meaning.
+3. Comparing these results across multiple samples to see if the spatial structures are consistent.
+
+Remember that Moran's I is just one way to quantify spatial structure. Depending on your specific research questions, you might also consider other spatial statistics or domain-specific analyses to fully understand the patterns captured by mNSF.
+
 You can repeat this process for each sample in your dataset to compare factors across samples. Look for patterns that are consistent across samples, as well as sample-specific variations.
 
-## 9. Conclusion 
+## 10. Conclusion 
 
 mNSF provides a powerful tool for analyzing multi-sample spatial transcriptomics data, allowing you to identify common factors across samples without the need for spatial alignment. This can be particularly useful for complex datasets where traditional alignment methods may fail, such as:
 
