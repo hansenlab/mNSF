@@ -386,9 +386,7 @@ class ModelTrainer(object):
             else: cvg=0   
             if test_cvdNorm:
           	    rel_chg_normalized=cc.relative_chg_normalized(self.loss["train"],idx_current=i) 
-          	    print("rel_chg_normalized")
-          	    print(rel_chg_normalized)
-          	    if(-(rel_chg_normalized)<tol_norm): cvg_normalized+=1 # positive values of rel_chg_normalized indicates increase of loss throughout the past 10 iterations
+                if(-(rel_chg_normalized)<tol_norm): cvg_normalized+=1 # positive values of rel_chg_normalized indicates increase of loss throughout the past 10 iterations
             if cvg>=2 or cvg_normalized>=2: #i.e. either convergence or normalized convergence has been detected twice in a row
                 self.converged=True
                 pickle_freq = i #ensures final pickling will happen
