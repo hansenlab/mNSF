@@ -1,19 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Classes and functions for training and saving multi-sample Non-negative Spatial Factorization (mNSF) models
-
-This module implements the core functionality for training mNSF models, including:
-- Model initialization
-- Training loop management
-- Convergence checking
-- Checkpointing and model saving
-- Error handling and learning rate adjustment
+Classes and functions for training and saving models
 
 @author: Yi Wang based on earlier work by Will Townes for the NSF package. 
 """
-# Import necessary libraries
-
 import pickle
 import pandas as pd
 import numpy as np
@@ -27,51 +18,31 @@ import matplotlib.pyplot as plt
 from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
 from mNSF.NSF import training,visualize
 
-# Import TensorFlow Probability for transformed variables and bijectors
-# These are used for constrained optimization and parameter transformations
+### check tv objects memory usage
 import tensorflow_probability as tfp
 tv = tfp.util.TransformedVariable
 tfb = tfp.bijectors
 
-# Set default float type for consistency across the module
 dtp = "float32"
 
 
-# Function to save objects using pickle
 def save_object(obj, filename):
     with open(filename, 'wb') as outp:  # Overwrites any existing file.
         pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
 
 
-# Main function to train mNSF model
 def train_model_mNSF(list_fit_,pickle_path_,
             list_Dtrain_,list_D_,legacy=False,test_cvdNorm=False, maxtry=10, lr=0.01, **kwargs):
   """
-    Run model training for mNSF across multiple samples.
-    
-    Args:
-        list_fit_: List of initial model fits
-        pickle_path_: Path to save pickled models
-        list_Dtrain_: List of training datasets
-        list_D_: List of full datasets
-        legacy: Boolean to use legacy TensorFlow optimizers
-        test_cvdNorm: Boolean to test normalized convergence
-        maxtry: Maximum number of training attempts
-        lr: Initial learning rate
-        **kwargs: Additional arguments passed to train_model
-    
-    Returns:
-        list_fit_: List of trained model fits
+  run model training for mNSF
+  returns a list of fitted model, where each item in the list is for one sample
   """
-  # Initialize ModelTrainer object for the first sample
   tro_ = ModelTrainer(list_fit_[0],pickle_path=pickle_path_,legacy=legacy, lr=lr)
   list_tro=list()
   nsample=len(list_D_)     
-  # Create ModelTrainer objects for each sample
   for k in range(0,nsample):
     tro_tmp=training.ModelTrainer(list_fit_[k],pickle_path=pickle_path_,legacy=legacy, lr=lr)
     list_tro.append(tro_tmp)
-  # Train the model using the main ModelTrainer object
   tro_.train_model(list_tro,
             list_Dtrain_,list_D_, test_cvdNorm=test_cvdNorm,maxtry=maxtry, **kwargs)
   
@@ -89,22 +60,11 @@ def train_model_mNSF(list_fit_,pickle_path_,
   return list_fit_        
 
 
-# Custom error for numerical divergence during training
+
 class NumericalDivergenceError(ValueError):
   pass
 
-# Function to truncate loss history to the current epoch
 def truncate_history(loss_history, epoch):
-  """
-    Truncate the loss history to the current epoch.
-    
-    Args:
-        loss_history: Dictionary containing loss histories
-        epoch: Current epoch number
-    
-    Returns:
-        Truncated loss history
-  """
   with suppress(AttributeError):
     epoch = epoch.numpy()
   cutoff = epoch+1
@@ -112,155 +72,66 @@ def truncate_history(loss_history, epoch):
     loss_history[i] = loss_history[i][:cutoff]
   return loss_history
 
-# Class to check convergence of the model
 class ConvergenceChecker(object):
-    def __init__(self, span, dtp="float64"):
-        """
-        Initialize the ConvergenceChecker with polynomial basis functions.
-        
-        Args:
-            span: Number of recent observations to consider
-            dtp: Data type for computations
-        """
-        # Create an array of indices
-        x = np.arange(span, dtype=dtp)
-        # Center the indices
-        x -= x.mean()
-        # Create a matrix of polynomial basis functions (constant, linear, quadratic, cubic)
-        X = np.column_stack((np.ones(shape=x.shape), x, x**2, x**3))
-        # Compute the left singular vectors of X
-        self.U = np.linalg.svd(X, full_matrices=False)[0]
+  def __init__(self,span,dtp="float64"):
+    x = np.arange(span,dtype=dtp)
+    x-= x.mean()
+    X = np.column_stack((np.ones(shape=x.shape),x,x**2,x**3))
+    self.U = np.linalg.svd(X,full_matrices=False)[0]
 
-    def smooth(self, y):
-        """
-        Apply smoothing to the input vector using the precomputed basis.
-        
-        Args:
-            y: Input vector to smooth
-        
-        Returns:
-            Smoothed version of y
-        """
-        return self.U @ (self.U.T @ y)
+  def smooth(self,y):
+    return self.U@(self.U.T@y)
 
-    def subset(self, y, idx=-1):
-        """
-        Extract a subset of the input vector.
-        
-        Args:
-            y: Input vector
-            idx: Index to end the subset (default: -1, meaning the end of the vector)
-        
-        Returns:
-            Subset of y
-        """
-        span = self.U.shape[0]
-        lo = idx - span + 1
-        if idx == -1:
-            return y[lo:]
-        else:
-            return y[lo:(idx+1)]
+  def subset(self,y,idx=-1):
+    span = self.U.shape[0]
+    lo = idx-span+1
+    if idx==-1:
+      return y[lo:]
+    else:
+      return y[lo:(idx+1)]
 
-    def relative_change(self, y, idx=-1, smooth=True):
-        """
-        Calculate the relative change in the input vector.
-        
-        Args:
-            y: Input vector
-            idx: Index to calculate change at (default: -1)
-            smooth: Whether to apply smoothing (default: True)
-        
-        Returns:
-            Relative change in y
-        """
-        y = self.subset(y, idx=idx)
-        if smooth:
-            y = self.smooth(y)
-        prev = y[-2]
-        # Calculate relative change with a small constant (0.1) to avoid division by zero
-        return (y[-1] - prev) / (0.1 + abs(prev))
+  def relative_change(self,y,idx=-1,smooth=True):
+    y = self.subset(y,idx=idx)
+    if smooth:
+      y = self.smooth(y)
+    prev=y[-2]
+    return (y[-1]-prev)/(0.1+abs(prev))
+    
+    
 
-    def converged(self, y, tol=1e-4, **kwargs):
-        """
-        Check if the relative change is below the tolerance.
-        
-        Args:
-            y: Input vector
-            tol: Convergence tolerance (default: 1e-4)
-            **kwargs: Additional arguments passed to relative_change
-        
-        Returns:
-            Boolean indicating whether convergence criterion is met
-        """
-        return abs(self.relative_change(y, **kwargs)) < tol
+    
+  def converged(self,y,tol=1e-4,**kwargs):
+    return abs(self.relative_change(y,**kwargs)) < tol
 
-    def relative_chg_normalized(self, y, idx_current=-1, len_trace=50, smooth=True):
-        """
-        Calculate the normalized relative change over a trace of values.
-        
-        Args:
-            y: Input vector
-            idx_current: Current index (default: -1)
-            len_trace: Length of the trace to consider (default: 50)
-            smooth: Whether to apply smoothing (default: True)
-        
-        Returns:
-            Normalized relative change
-        """
-        cc = self.relative_change_trace(y, idx_current=idx_current, len_trace=len_trace, smooth=smooth)
-        print(cc)
-        mean_cc = np.nanmean(cc) 
-        sd_cc = np.std(cc) 
-        return mean_cc / sd_cc
+  
+  def relative_chg_normalized(self, y, idx_current = -1, len_trace=50, smooth=True):
+    cc = self.relative_change_trace( y, idx_current = idx_current, len_trace=len_trace, smooth=smooth)
+    print(cc)
+    mean_cc = np.nanmean(cc) 
+    sd_cc = np.std(cc) 
+    return mean_cc/sd_cc
+    
 
-    def relative_change_trace(self, y, idx_current=-1, len_trace=50, smooth=True):
-        """
-        Calculate the trace of relative changes.
-        
-        Args:
-            y: Input vector
-            idx_current: Current index (default: -1)
-            len_trace: Length of the trace to consider (default: 50)
-            smooth: Whether to apply smoothing (default: True)
-        
-        Returns:
-            Array of relative changes
-        """
-        cc = self.relative_change_all(y, smooth=smooth)
-        return cc[(idx_current - len_trace):idx_current]
+    
+  def relative_change_trace(self, y, idx_current = -1, len_trace=50, smooth=True):
+    #n = len(y)
+    #span = self.U.shape[0]
+    #span = self.U.shape[0]
+    cc=self.relative_change_all(y,smooth=smooth)
+    return cc[(idx_current-len_trace):idx_current]
+    
+	
+  def relative_change_all(self,y,smooth=True):
+    n = len(y)
+    span = self.U.shape[0]
+    cc = np.tile([np.nan],n)
+    for i in range(span,n):
+      cc[i] = self.relative_change(y,idx=i,smooth=smooth)
+    return cc
 
-    def relative_change_all(self, y, smooth=True):
-        """
-        Calculate relative changes for all possible subsets of y.
-        
-        Args:
-            y: Input vector
-            smooth: Whether to apply smoothing (default: True)
-        
-        Returns:
-            Array of relative changes for all subsets
-        """
-        n = len(y)
-        span = self.U.shape[0]
-        cc = np.tile([np.nan], n)
-        for i in range(span, n):
-            cc[i] = self.relative_change(y, idx=i, smooth=smooth)
-        return cc
-
-    def converged_all(self, y, tol=1e-4, smooth=True):
-        """
-        Check convergence for all possible subsets of y.
-        
-        Args:
-            y: Input vector
-            tol: Convergence tolerance (default: 1e-4)
-            smooth: Whether to apply smoothing (default: True)
-        
-        Returns:
-            Boolean array indicating convergence for each subset
-        """
-        cc = self.relative_change_all(y, smooth=smooth)
-        return np.abs(cc) < tol
+  def converged_all(self,y,tol=1e-4,smooth=True):
+    cc = self.relative_change_all(y,smooth=smooth)
+    return np.abs(cc)<tol
 
 class ModelTrainer(object): #goal to change this to tf.module?
   """
@@ -277,20 +148,11 @@ class ModelTrainer(object): #goal to change this to tf.module?
   def __init__(self, model, lr=0.01, pickle_path=None, max_to_keep=3, legacy=False, **kwargs):
     #ckpt_path="/tmp/tf_ckpts", #use temporary directory instead
     """
-    Initialize the ModelTrainer.
-        
-    Args:
-        model: The mNSF model to be trained
-        lr: Initial learning rate
-        pickle_path: Path to save pickled models
-        max_to_keep: Maximum number of checkpoints to keep
-        legacy: Whether to use legacy TensorFlow optimizers
-        **kwargs: Additional arguments for the optimizer
+    **kwargs are passed to tf.optimizers.[Optimizer] constructor
     """
     self.loss = {"train":np.array([np.nan]), "val":np.array([np.nan])}
     self.model = model
     self.legacy = legacy
-    # Initialize optimizers (main and kernel hyperparameter optimizer)
     if self.legacy: #need to use legacy optimizer with tensorflow v2.12.0 +
       self.optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=lr, **kwargs)
       self.optimizer_k = tf.keras.optimizers.legacy.Adam(learning_rate=0.01*lr, **kwargs)
@@ -299,11 +161,12 @@ class ModelTrainer(object): #goal to change this to tf.module?
       self.optimizer = tf.optimizers.Adam(learning_rate=lr, **kwargs)
       #optimizer for kernel hyperparams, does nothing for nonspatial models
       self.optimizer_k = tf.optimizers.Adam(learning_rate=0.01*lr, **kwargs)
-    # Initialize training variables
+
     self.epoch = tf.Variable(0,name="epoch")
+    # self.tries = tf.Variable(0,name="number of tries")
     self.ptime = tf.Variable(0.0,name="elapsed process time")
     self.wtime = tf.Variable(0.0,name="elapsed wall time")
-    # Set up checkpointing
+    # self.ckpt_counter = tf.Variable(0,name="checkpoint counter")
     self.ckpt = tf.train.Checkpoint(model=self.model, optimizer=self.optimizer,
                                     optimizer_k=self.optimizer_k,
                                     epoch=self.epoch, ptime=self.ptime,
