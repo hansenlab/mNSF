@@ -160,7 +160,6 @@ class ConvergenceChecker(object):
         cc = self.relative_change_all(y, smooth=smooth)
         return np.abs(cc) < tol
 
-# Main class for training the model
 class ModelTrainer(object):
     """
     Time keeping policy:
@@ -199,336 +198,316 @@ class ModelTrainer(object):
         self.set_pickle_path(pickle_path)
         self.converged = False
 
+    def multiply_lr(self, factor):
+        """
+        Multiply the learning rate of both optimizers by a given factor.
+        
+        Args:
+            factor (float): The multiplier for the learning rate.
+        
+        Returns:
+            tuple: The old and new learning rates.
+        """
+        lr = self.optimizer.learning_rate
+        lr_old = lr.numpy()
+        lr_new = lr_old * factor
+        lr.assign(lr_new)  # Update main optimizer learning rate
+        
+        lr_k = self.optimizer_k.learning_rate
+        lr_k.assign(lr_k.numpy() * factor)  # Update kernel optimizer learning rate
+        
+        return lr_old, lr_new
 
-  def multiply_lr(self, factor):
-    """
-    Multiply the learning rate of both optimizers by a given factor.
-    
-    Args:
-        factor (float): The multiplier for the learning rate.
-    
-    Returns:
-        tuple: The old and new learning rates.
-    """
-    lr = self.optimizer.learning_rate
-    lr_old = lr.numpy()
-    lr_new = lr_old * factor
-    lr.assign(lr_new)  # Update main optimizer learning rate
-    
-    lr_k = self.optimizer_k.learning_rate
-    lr_k.assign(lr_k.numpy() * factor)  # Update kernel optimizer learning rate
-    
-    return lr_old, lr_new
+    def set_pickle_path(self, pickle_path):
+        """
+        Set the path for saving pickle files and create the directory if it doesn't exist.
+        
+        Args:
+            pickle_path (str): The path where pickle files will be saved.
+        """
+        if pickle_path is not None:
+            mkdir_p(pickle_path)  # Create directory if it doesn't exist
+        self.pickle_path = pickle_path
 
-def set_pickle_path(self, pickle_path):
-    """
-    Set the path for saving pickle files and create the directory if it doesn't exist.
-    
-    Args:
-        pickle_path (str): The path where pickle files will be saved.
-    """
-    if pickle_path is not None:
-        mkdir_p(pickle_path)  # Create directory if it doesn't exist
-    self.pickle_path = pickle_path
+    def update_times(self, pchg, wchg):
+        """
+        Update the process and wall times.
+        
+        Args:
+            pchg (float): Change in process time.
+            wchg (float): Change in wall time.
+        
+        Returns:
+            tuple: Current process time and wall time.
+        """
+        self.ptime.assign_add(pchg)  # Add change to process time
+        self.wtime.assign_add(wchg)  # Add change to wall time
+        return process_time(), time()  # Return current times for resetting the counter
 
-def update_times(self, pchg, wchg):
-    """
-    Update the process and wall times.
-    
-    Args:
-        pchg (float): Change in process time.
-        wchg (float): Change in wall time.
-    
-    Returns:
-        tuple: Current process time and wall time.
-    """
-    self.ptime.assign_add(pchg)  # Add change to process time
-    self.wtime.assign_add(wchg)  # Add change to wall time
-    return process_time(), time()  # Return current times for resetting the counter
+    def checkpoint(self, mgr, *args):
+        """
+        Save a checkpoint and update times.
+        
+        Args:
+            mgr (tf.train.CheckpointManager): Checkpoint manager.
+            *args: Arguments passed to update_times method.
+        
+        Returns:
+            tuple: Updated process time and wall time.
+        """
+        p, w = self.update_times(*args)
+        mgr.save(checkpoint_number=self.epoch)  # Save checkpoint
+        return p, w
 
-def checkpoint(self, mgr, *args):
-    """
-    Save a checkpoint and update times.
-    
-    Args:
-        mgr (tf.train.CheckpointManager): Checkpoint manager.
-        *args: Arguments passed to update_times method.
-    
-    Returns:
-        tuple: Updated process time and wall time.
-    """
-    p, w = self.update_times(*args)
-    mgr.save(checkpoint_number=self.epoch)  # Save checkpoint
-    return p, w
+    def restore(self, ckpt_id):
+        """
+        Restore the model from a checkpoint.
+        
+        Args:
+            ckpt_id (str): Checkpoint identifier.
+        
+        Returns:
+            tuple: Current process time and wall time.
+        """
+        self.ckpt.restore(ckpt_id)  # Restore checkpoint (resets times implicitly)
+        return process_time(), time()
 
-def restore(self, ckpt_id):
-    """
-    Restore the model from a checkpoint.
-    
-    Args:
-        ckpt_id (str): Checkpoint identifier.
-    
-    Returns:
-        tuple: Current process time and wall time.
-    """
-    self.ckpt.restore(ckpt_id)  # Restore checkpoint (resets times implicitly)
-    return process_time(), time()
+    def pickle(self, *args):
+        """
+        Save the model state to a pickle file.
+        
+        Args:
+            *args: Arguments passed to update_times method.
+        
+        Returns:
+            tuple: Updated process time and wall time.
+        """
+        p, w = self.update_times(*args)
+        if self.converged:
+            fname = "converged.pickle"
+        else:
+            fname = f"epoch{self.epoch.numpy()}.pickle"
+        pickle_to_file(self, path.join(self.pickle_path, fname))
+        return p, w
 
-def pickle(self, *args):
+    @staticmethod
+    def from_pickle(pth, epoch=None):
+        """
+        Load a model from a pickle file.
+        
+        Args:
+            pth (str): Path to the pickle file directory.
+            epoch (int, optional): Specific epoch to load. If None, loads the converged state.
+        
+        Returns:
+            ModelTrainer: Loaded model trainer object.
+        """
+        if epoch:
+            fname = f"epoch{epoch}.pickle"
+        else:
+            fname = "converged.pickle"
+        return unpickle_from_file(path.join(pth, fname))
+	    
+    def _train_model_fixed_lr(self, list_tro,list_Dtrain, list_D__, ckpt_mgr,Dval=None, #Ntr=None,
+                            S=3,
+                           verbose=True,num_epochs=500,
+                           ptic = process_time(), wtic = time(), ckpt_freq=50, test_cvdNorm=False,
+                           kernel_hp_update_freq=10, status_freq=10,
+                           span=100, tol=1e-4, tol_norm = 0.4, pickle_freq=None, check_convergence: bool = True):
+    """train_step
+    Dtrain, Dval : tensorflow Datasets produced by prepare_datasets_tf func
+    ckpt_mgr must store at least 2 checkpoints (max_to_keep)
+    Ntr: total number of training observations, needed to adjust KL term in ELBO
+    S: number of samples to approximate the ELBO
+    verbose: should status updates be printed
+    num_epochs: maximum passes through the data after which optimization will be stopped
+    ptic,wtic: process and wall time baselines
+    kernel_hp_update_freq: how often to update the kernel hyperparameters (eg every 10 epochs)
+      updating less than once per epoch improves speed but reduces numerical stability
+    status_freq: how often to check for convergence and print updates
+    ckpt_freq: how often to save tensorflow checkpoints to disk
+    span: when checking for convergence, how many recent observations to consider
+    tol: numerical (relative) change below which convergence is declared
+    pickle_freq: how often to save the entire object to disk as a pickle file
     """
-    Save the model state to a pickle file.
-    
-    Args:
-        *args: Arguments passed to update_times method.
-    
-    Returns:
-        tuple: Updated process time and wall time.
-    """
-    p, w = self.update_times(*args)
-    if self.converged:
-        fname = "converged.pickle"
-    else:
-        fname = f"epoch{self.epoch.numpy()}.pickle"
-    pickle_to_file(self, path.join(self.pickle_path, fname))
-    return p, w
-
-@staticmethod
-def from_pickle(pth, epoch=None):
-    """
-    Load a model from a pickle file.
-    
-    Args:
-        pth (str): Path to the pickle file directory.
-        epoch (int, optional): Specific epoch to load. If None, loads the converged state.
-    
-    Returns:
-        ModelTrainer: Loaded model trainer object.
-    """
-    if epoch:
-        fname = f"epoch{epoch}.pickle"
-    else:
-        fname = "converged.pickle"
-    return unpickle_from_file(path.join(pth, fname))
-
-def _train_model_fixed_lr(self, list_tro, list_Dtrain, list_D__, ckpt_mgr, Dval=None, S=3,
-                          verbose=True, num_epochs=500, ptic=process_time(), wtic=time(), 
-                          ckpt_freq=50, test_cvdNorm=False, kernel_hp_update_freq=10, 
-                          status_freq=10, span=100, tol=1e-4, tol_norm=0.4, 
-                          pickle_freq=None, check_convergence: bool = True):
-    """
-    Train the model with a fixed learning rate.
-    
-    Args:
-        ... [args description as in the original docstring] ...
-    """
-    # Save initial checkpoint and update time
-    ptic, wtic = self.checkpoint(ckpt_mgr, process_time()-ptic, time()-wtic)
-    
-    # Pad the loss array to accommodate all epochs
-    self.loss["train"] = rpad(self.loss["train"], num_epochs+1)
-    
-    # Set pickle frequency to num_epochs if not specified
-    if pickle_freq is None:
-        pickle_freq = num_epochs
-    
-    # Prepare status message format
+    ptic,wtic = self.checkpoint(ckpt_mgr, process_time()-ptic, time()-wtic)
+    self.loss["train"] = rpad(self.loss["train"],num_epochs+1)
+    if pickle_freq is None: #only pickle at the end
+      pickle_freq = num_epochs
     msg = '{:04d} train: {:.3e}'
     if Dval:
-        msg += ', val: {:.3e}'
-        self.loss["val"] = rpad(self.loss["val"], num_epochs+1)
-    msg2 = ""  # Will be used to include relative change info
-    
-    # Initialize convergence counters
-    cvg = 0  # Regular convergence counter
-    cvg_normalized = 0  # Normalized convergence counter
-    
-    # Create ConvergenceChecker object
+      msg += ', val: {:.3e}'
+      self.loss["val"] = rpad(self.loss["val"],num_epochs+1)
+    msg2 = "" #modified later to include rel_chg
+    cvg = 0 #increment each time we think it has converged
+    cvg_normalized=0
     cc = ConvergenceChecker(span)
-    
-    # Main training loop
+    #epoch=0
     while (not self.converged) and (self.epoch < num_epochs):
-        epoch_loss = tf.keras.metrics.Mean()
-        chol = (self.epoch % kernel_hp_update_freq == 0)  # Check if kernel hyperparameters should be updated
-        trl = 0.0  # Total training loss for this epoch
-        nsample = len(list_Dtrain)
-        
-        # Iterate over all samples
-        for ksample in range(0, nsample):
-            list_tro[ksample].model.Z = list_D__[ksample]["Z"]  # Update Z for each sample
-            Dtrain_ksample = list_Dtrain[ksample]
-            
-            # Train on each batch in the sample
-            for D in Dtrain_ksample:
-                epoch_loss.update_state(list_tro[ksample].model.train_step(
-                    D, list_tro[ksample].optimizer, list_tro[ksample].optimizer_k,
-                    Ntot=list_tro[ksample].model.delta.shape[1], chol=True
-                ))
-                trl = trl + epoch_loss.result().numpy()
-        
-        # Update W (not clear what this does without more context)
-        W_updated = list_tro[ksample].model.W - list_tro[ksample].model.W
-        for ksample in range(0, nsample):
-            W_updated = W_updated + (list_tro[ksample].model.W / nsample)
-        
-        # Increment epoch and record loss
-        self.epoch.assign_add(1)
-        i = self.epoch.numpy()
-        self.loss["train"][i] = trl
+      epoch_loss = tf.keras.metrics.Mean()
+      #epoch=epoch+1
+      #epoch=self.epoch 
+      chol=(self.epoch % kernel_hp_update_freq==0)
+      trl=0.0
+      nsample=len(list_Dtrain)
+      for ksample in range(0,nsample):
+        list_tro[ksample].model.Z=list_D__[ksample]["Z"]
+        Dtrain_ksample = list_Dtrain[ksample]
+        for D in Dtrain_ksample: #iterate through each of the batches 
+          epoch_loss.update_state(list_tro[ksample].model.train_step( D, list_tro[ksample].optimizer, list_tro[ksample].optimizer_k,
+                                   Ntot=list_tro[ksample].model.delta.shape[1], chol=True))
+          trl = trl + epoch_loss.result().numpy()
+          #print("ksample")
+          #print(ksample)
+          #print(D["X"].shape)
+          #print(list_tro[ksample].model.delta.shape[1])
+          #print(tf.config.experimental.get_memory_info('GPU:0'))
+      W_updated=list_tro[ksample].model.W-list_tro[ksample].model.W
+      #print(trl)
+      for ksample in range(0,nsample):
+      	W_updated = W_updated+ (list_tro[ksample].model.W / nsample)
+      self.epoch.assign_add(1)
+      i = self.epoch.numpy()
+      self.loss["train"][i] = trl
 
-        # Check for NaN in sample loadings
-        for fit_i in list_tro:
-            if np.isnan(fit_i.model.W).any():
-                print('NaN in sample ' + str(list_tro.index(fit_i) + 1))
+      ## check for nan in any sample loadings
+      for fit_i in list_tro:
+        if np.isnan(fit_i.model.W).any():
+          print('NaN in sample ' + str(list_tro.index(fit_i) + 1))
 
-        # Check for loss divergence
-        if not np.isfinite(trl):
-            print("training loss calculated at the point of divergence: ")
-            print(trl)
-            raise NumericalDivergenceError
-
-        # Periodic status check and convergence test
-        if i % status_freq == 0 or i == num_epochs:
-            # Compute validation loss if validation data is provided
-            if Dval:
-                val_loss = self.model.validation_step(Dval, S=S, chol=False).numpy()
-                self.loss["val"][i] = val_loss
-            
-            # Check for convergence
-            if i > span and check_convergence:
-                rel_chg = cc.relative_change(self.loss["train"], idx=i)
-                print("rel_chg")
-                print(rel_chg)
-                msg2 = ", chg: {:.2e}".format(-rel_chg)
-                
-                # Update convergence counter
-                if abs(rel_chg) < tol:
-                    cvg += 1
-                else:
-                    cvg = 0
-                
-                # Check normalized convergence if requested
-                if test_cvdNorm:
-                    rel_chg_normalized = cc.relative_chg_normalized(self.loss["train"], idx_current=i)
-                    print("rel_chg_normalized")
-                    print(rel_chg_normalized)
-                    if -(rel_chg_normalized) < tol_norm:
-                        cvg_normalized += 1
-                
-                # Check if converged
-                if cvg >= 2 or cvg_normalized >= 2:
-                    self.converged = True
-                    pickle_freq = i  # Ensure final pickling
-                    self.loss = truncate_history(self.loss, i)
-            
-            # Print status if verbose
-            if verbose:
-                if Dval:
-                    print(msg.format(i, trl, val_loss) + msg2)
-                else:
-                    print(msg.format(i, trl) + msg2)
-        
-        # Periodic checkpoint saving
-        if i % ckpt_freq == 0:
-            ptic, wtic = self.checkpoint(ckpt_mgr, process_time()-ptic, time()-wtic)
-        
-        # Periodic pickle saving
-        if self.pickle_path and i % pickle_freq == 0:
-            ptic, wtic = self.pickle(process_time()-ptic, time()-wtic)
-
-
-def train_model(self, list_tro, list_Dtrain, list_D__, lr_reduce=0.5, maxtry=10, 
-                verbose=True, ckpt_freq=50, test_cvdNorm=False, **kwargs):
-    """
-    Train the model with automatic learning rate adjustment.
-    
-    Args:
-        list_tro (list): List of model trainers for each sample.
-        list_Dtrain (list): List of training datasets.
-        list_D__ (list): List of additional data for each sample.
-        lr_reduce (float): Factor to reduce learning rate by on failure.
-        maxtry (int): Maximum number of training attempts.
-        verbose (bool): Whether to print status updates.
-        ckpt_freq (int): Frequency of saving checkpoints.
-        test_cvdNorm (bool): Whether to test normalized convergence.
-        **kwargs: Additional arguments passed to _train_model_fixed_lr.
-    """
-    # Initialize timers
-    ptic = process_time()
-    wtic = time()
-    tries = 0
-    
-    # Get initial epoch (usually zero, unless loaded from a pickle file)
-    epoch0 = self.epoch.numpy()
-    
-    # Create a temporary directory for checkpoints
-    with TemporaryDirectory() as ckpth:
+      if not np.isfinite(trl): ### modified
+        print("training loss calculated at the point of divergence: ")
+        print(trl)
+        raise NumericalDivergenceError###!!!NumericalDivergenceError
+      #if not np.isfinite(trl) or trl>self.loss["train"][1]: ### modified
+      #  raise NumericalDivergenceError###!!!NumericalDivergenceError
+      if i%status_freq==0 or i==num_epochs:
+        if Dval:
+          val_loss = self.model.validation_step(Dval, S=S, chol=False).numpy()
+          self.loss["val"][i] = val_loss
+        if i>span and check_convergence: #checking for convergence
+          rel_chg = cc.relative_change(self.loss["train"],idx=i)
+          print("rel_chg")
+          print(rel_chg)
+          msg2 = ", chg: {:.2e}".format(-rel_chg)
+          if abs(rel_chg)<tol: cvg+=1
+          else: cvg=0   
+          if test_cvdNorm:
+          	rel_chg_normalized=cc.relative_chg_normalized(self.loss["train"],idx_current=i) 
+          	print("rel_chg_normalized")
+          	print(rel_chg_normalized)
+          	if(-(rel_chg_normalized)<tol_norm): cvg_normalized+=1 # positive values of rel_chg_normalized indicates increase of loss throughout the past 10 iterations
+          if cvg>=2 or cvg_normalized>=2: #i.e. either convergence or normalized convergence has been detected twice in a row
+            self.converged=True
+            pickle_freq = i #ensures final pickling will happen
+            self.loss = truncate_history(self.loss, i)
         if verbose:
-            print(f"Temporary checkpoint directory: {ckpth}")
-        
-        # Create a checkpoint manager
-        mgr = tf.train.CheckpointManager(self.ckpt, directory=ckpth, max_to_keep=maxtry)
-        
-        # Main training loop
-        while tries < maxtry:
-            try:
-                # Attempt to train the model with fixed learning rate
-                self._train_model_fixed_lr(list_tro, list_Dtrain, list_D__, mgr, 
-                                           ckpt_freq=ckpt_freq,
-                                           **kwargs)
-                
-                # Check if training is complete
-                if self.epoch >= len(self.loss["train"]) - 1:
-                    break  # Finished training
-            
-            except (tf.errors.InvalidArgumentError, NumericalDivergenceError) as err:
-                # Handle numerical instability or divergence
-                
-                # Plot and save the loss curve
-                tr = np.array(self.loss["train"])
-                plt.figure()
-                plt.plot(tr, c='blue', label="train")
-                plt.xlabel("epoch")
-                plt.ylabel("ELBO loss")
-                plt.title(f"Try {tries}")
-                plt.savefig(f"loss{tries}.png")
-                plt.show()
-                plt.clf()
-                
-                # Increment try counter
-                tries += 1
-                print(f"tries: {tries}")
-                
-                # If maximum tries reached, raise the error
-                if tries == maxtry:
-                    raise err
-                
-                # Print verbose message about numerical instability
-                if verbose:
-                    msg = "{:04d} numerical instability (try {:d})"
-                    print(msg.format(self.epoch.numpy(), tries))
-                
-                # Reset epoch and restore from checkpoint
-                new_epoch = 0
-                self.epoch.assign(0)
-                ckpt = path.join(ckpth, f"ckpt-{new_epoch}")
-                ptic, wtic = self.restore(ckpt)
-                
-                # Restore model for each sample
-                nsample = len(list_Dtrain)
-                for ksample in range(0, nsample):
-                    with open(f'fit_{ksample+1}_restore.pkl', 'rb') as inp:
-                        list_tro[ksample].model = pickle.load(inp)
-                
-                # Reduce learning rate
-                lr_old, lr_new = self.multiply_lr(lr_reduce)
-                if verbose:
-                    msg = "{:04d} learning rate: {:.2e}"
-                    print(msg.format(new_epoch, lr_new))
-    
-    # Print final training status
+          if Dval: print(msg.format(i,trl,val_loss)+msg2)
+          else: print(msg.format(i,trl)+msg2)
+      if i%ckpt_freq==0:
+        ptic,wtic = self.checkpoint(ckpt_mgr, process_time()-ptic, time()-wtic)
+      if self.pickle_path and i%pickle_freq==0:
+        ptic,wtic = self.pickle(process_time()-ptic, time()-wtic)
+      # except tf.errors.InvalidArgumentError as err: #cholesky failed
+      #   j = i.numpy() #save the current epoch value for printing
+      #   ptic,wtic = self.restore()
+      #   # self.ckpt.restore(self.manager.latest_checkpoint) #resets i to last checkpt
+      #   if ng < 1.0: ng *= 10.0
+      #   else: raise err #nugget has gotten too big so just give up
+      #   try: self.model.set_nugget(ng) #spatial or integrated model
+      #   except AttributeError: raise err #nonspatial model
+      #   if verbose:
+      #     print("Epoch: {:04d}, numerical error, reverting to epoch {:04d}, \
+      #           increase nugget to {:.3E}".format(j, i.numpy(), ng))
+      #   self.loss = truncate_history(self.loss,i)
+      #   continue
+
+  def find_checkpoint(self, ckpt_freq, back=1, epoch0=0):
+    """
+    If checkpoints are saved every [ckpt_freq] epochs, and we want to go back
+    at least [back*ckpt_freq] epochs from the current epoch,
+    returns the epoch number where the files can be found
+    For example, if we are at epoch 201, ckpt_freq=50, and back=1, we want to
+    go back to the checkpoint saved at epoch 150 (NOT 200).
+    If back=2, we would go back to epoch 100.
+    If this takes it below zero, we truncate at zero, since there should always
+    be a checkpoint at epoch 0. Note this assumption may be violated for
+    models loaded by from_pickle. For example if pickling happened at epoch
+    201, and further model fitting proceeded to hit a numerical divergence at
+    epoch 209, this function would try to go back to epoch 150 but the checkpoint
+    would not exist because the temporary directory would have been cleaned up.
+    This is considered acceptable since objects loaded from pickle are assumed
+    to be either already numerically converged or to have at least run a large
+    number of epochs without numerical problems.
+    """
+    return max(ckpt_freq*(self.epoch.numpy()//ckpt_freq - back), epoch0)
+
+  def train_model(self, list_tro, list_Dtrain, list_D__, lr_reduce=0.5, maxtry=10, verbose=True,#*args,
+                  ckpt_freq=50, test_cvdNorm=False, **kwargs):
+    """
+    See train_model_fixed_lr for args and kwargs. This method is a wrapper
+    that automatically tries to adjust the learning rate
+    """
+    # assert self.tries<=maxtry
+    ptic=process_time()
+    wtic=time()
+    tries=0
+    #set the earliest epoch that could be returned to if numerical divergence
+    epoch0=self.epoch.numpy() #usually zero, unless loaded from a pickle file
+    with TemporaryDirectory() as ckpth:
+      if verbose: print("Temporary checkpoint directory: {}".format(ckpth))
+      mgr = tf.train.CheckpointManager(self.ckpt, directory=ckpth, max_to_keep=maxtry)
+      while tries < maxtry:
+        try:
+          self._train_model_fixed_lr(list_tro,list_Dtrain, list_D__, mgr, #*args,
+                                      #ptic=ptic, wtic=wtic, 
+                                     #verbose=verbose, 
+                                     ckpt_freq=ckpt_freq,
+                                     **kwargs)
+          if self.epoch>=len(self.loss["train"])-1: break #finished training
+        except (tf.errors.InvalidArgumentError,NumericalDivergenceError) as err: #cholesky failure
+          # plot loss when diverges          
+          tr = np.array(self.loss["train"])
+          #color_list = list(matplotlib.colors.TABLEAU_COLORS.values())
+          plt.figure()
+          plt.plot(tr,c='blue',label="train")
+          plt.xlabel("epoch")
+          plt.ylabel("ELBO loss")
+          plt.title("Try " + str(tries))
+          plt.savefig("loss" + str(tries) + ".png")
+          plt.show()
+          plt.clf()
+          #
+          tries+=1
+          print("tries")
+          print(tries)
+          if tries==maxtry: raise err
+          #else: #not yet reached the maximum number of tries
+          if verbose:
+            msg = "{:04d} numerical instability (try {:d})"
+            print(msg.format(self.epoch.numpy(),tries))
+          #new_epoch = self.find_checkpoint(ckpt_freq, back=1, epoch0=epoch0) #int  #modofied
+          new_epoch=0
+          self.epoch.assign(0)#modofied
+          #new_epoch=0
+          #self.epoch=0
+          ckpt = path.join(ckpth,"ckpt-{}".format(new_epoch))
+          # self.reset(lr_reduce=lr_reduce)
+          ptic,wtic = self.restore(ckpt)
+          nsample=len(list_Dtrain)
+          #print("nsample")
+          #print(nsample)
+          for ksample in range(0,nsample):
+            with open('fit_'+ str(ksample+1) +'_restore.pkl', 'rb') as inp:
+              list_tro[ksample].model = pickle.load(inp)  
+            #save_object(list_para_tmp, 'list_para_'+ str(kkk+1) +'.pkl')
+          lr_old,lr_new=self.multiply_lr(lr_reduce)
+          if verbose:
+            msg = "{:04d} learning rate: {:.2e}"
+            print(msg.format(new_epoch,lr_new))
     if verbose:
-        msg = "{:04d} training complete".format(self.epoch.numpy())
-        if self.converged:
-            print(msg + ", converged.")
-        else:
-            print(msg + ", reached maximum epochs.")
+      msg = "{:04d} training complete".format(self.epoch.numpy())
+      if self.converged:
+        print(msg+", converged.")
+      else:
+        print(msg+", reached maximum epochs.")
