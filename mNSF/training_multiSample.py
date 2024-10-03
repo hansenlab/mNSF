@@ -400,19 +400,6 @@ class ModelTrainer(object):
         ptic,wtic = self.checkpoint(ckpt_mgr, process_time()-ptic, time()-wtic)
       if self.pickle_path and i%pickle_freq==0:
         ptic,wtic = self.pickle(process_time()-ptic, time()-wtic)
-      # except tf.errors.InvalidArgumentError as err: #cholesky failed
-      #   j = i.numpy() #save the current epoch value for printing
-      #   ptic,wtic = self.restore()
-      #   # self.ckpt.restore(self.manager.latest_checkpoint) #resets i to last checkpt
-      #   if ng < 1.0: ng *= 10.0
-      #   else: raise err #nugget has gotten too big so just give up
-      #   try: self.model.set_nugget(ng) #spatial or integrated model
-      #   except AttributeError: raise err #nonspatial model
-      #   if verbose:
-      #     print("Epoch: {:04d}, numerical error, reverting to epoch {:04d}, \
-      #           increase nugget to {:.3E}".format(j, i.numpy(), ng))
-      #   self.loss = truncate_history(self.loss,i)
-      #   continue
 
   def find_checkpoint(self, ckpt_freq, back=1, epoch0=0):
     """
