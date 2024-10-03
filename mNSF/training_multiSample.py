@@ -114,76 +114,153 @@ def truncate_history(loss_history, epoch):
 
 # Class to check convergence of the model
 class ConvergenceChecker(object):
-  def __init__(self,span,dtp="float64"):
-    """
-    Initialize the ConvergenceChecker with polynomial basis functions.
+    def __init__(self, span, dtp="float64"):
+        """
+        Initialize the ConvergenceChecker with polynomial basis functions.
         
-    Args:
-        span: Number of recent observations to consider
-        dtp: Data type for computations
-    """
-    x = np.arange(span,dtype=dtp)
-    x-= x.mean()
-    X = np.column_stack((np.ones(shape=x.shape),x,x**2,x**3))
-    self.U = np.linalg.svd(X,full_matrices=False)[0]
+        Args:
+            span: Number of recent observations to consider
+            dtp: Data type for computations
+        """
+        # Create an array of indices
+        x = np.arange(span, dtype=dtp)
+        # Center the indices
+        x -= x.mean()
+        # Create a matrix of polynomial basis functions (constant, linear, quadratic, cubic)
+        X = np.column_stack((np.ones(shape=x.shape), x, x**2, x**3))
+        # Compute the left singular vectors of X
+        self.U = np.linalg.svd(X, full_matrices=False)[0]
 
-  def smooth(self,y): 
-    """Apply smoothing to the input vector."""
-    return self.U@(self.U.T@y)
+    def smooth(self, y):
+        """
+        Apply smoothing to the input vector using the precomputed basis.
+        
+        Args:
+            y: Input vector to smooth
+        
+        Returns:
+            Smoothed version of y
+        """
+        return self.U @ (self.U.T @ y)
 
-  def subset(self,y,idx=-1): 
-    """Extract a subset of the input vector."""
-    span = self.U.shape[0]
-    lo = idx-span+1
-    if idx==-1:
-      return y[lo:]
-    else:
-      return y[lo:(idx+1)]
+    def subset(self, y, idx=-1):
+        """
+        Extract a subset of the input vector.
+        
+        Args:
+            y: Input vector
+            idx: Index to end the subset (default: -1, meaning the end of the vector)
+        
+        Returns:
+            Subset of y
+        """
+        span = self.U.shape[0]
+        lo = idx - span + 1
+        if idx == -1:
+            return y[lo:]
+        else:
+            return y[lo:(idx+1)]
 
-  def relative_change(self,y,idx=-1,smooth=True):
-    """Calculate the relative change in the input vector."""
-    y = self.subset(y,idx=idx)
-    if smooth:
-      y = self.smooth(y)
-    prev=y[-2]
-    return (y[-1]-prev)/(0.1+abs(prev))
-    
-    
+    def relative_change(self, y, idx=-1, smooth=True):
+        """
+        Calculate the relative change in the input vector.
+        
+        Args:
+            y: Input vector
+            idx: Index to calculate change at (default: -1)
+            smooth: Whether to apply smoothing (default: True)
+        
+        Returns:
+            Relative change in y
+        """
+        y = self.subset(y, idx=idx)
+        if smooth:
+            y = self.smooth(y)
+        prev = y[-2]
+        # Calculate relative change with a small constant (0.1) to avoid division by zero
+        return (y[-1] - prev) / (0.1 + abs(prev))
 
-    
-  def converged(self,y,tol=1e-4,**kwargs):
-    """Check if the relative change is below the tolerance."""
-    return abs(self.relative_change(y,**kwargs)) < tol
+    def converged(self, y, tol=1e-4, **kwargs):
+        """
+        Check if the relative change is below the tolerance.
+        
+        Args:
+            y: Input vector
+            tol: Convergence tolerance (default: 1e-4)
+            **kwargs: Additional arguments passed to relative_change
+        
+        Returns:
+            Boolean indicating whether convergence criterion is met
+        """
+        return abs(self.relative_change(y, **kwargs)) < tol
 
-  
-  def relative_chg_normalized(self, y, idx_current = -1, len_trace=50, smooth=True):
-    cc = self.relative_change_trace( y, idx_current = idx_current, len_trace=len_trace, smooth=smooth)
-    print(cc)
-    mean_cc = np.nanmean(cc) 
-    sd_cc = np.std(cc) 
-    return mean_cc/sd_cc
-    
+    def relative_chg_normalized(self, y, idx_current=-1, len_trace=50, smooth=True):
+        """
+        Calculate the normalized relative change over a trace of values.
+        
+        Args:
+            y: Input vector
+            idx_current: Current index (default: -1)
+            len_trace: Length of the trace to consider (default: 50)
+            smooth: Whether to apply smoothing (default: True)
+        
+        Returns:
+            Normalized relative change
+        """
+        cc = self.relative_change_trace(y, idx_current=idx_current, len_trace=len_trace, smooth=smooth)
+        print(cc)
+        mean_cc = np.nanmean(cc) 
+        sd_cc = np.std(cc) 
+        return mean_cc / sd_cc
 
-    
-  def relative_change_trace(self, y, idx_current = -1, len_trace=50, smooth=True):
-    #n = len(y)
-    #span = self.U.shape[0]
-    #span = self.U.shape[0]
-    cc=self.relative_change_all(y,smooth=smooth)
-    return cc[(idx_current-len_trace):idx_current]
-    
-	
-  def relative_change_all(self,y,smooth=True):
-    n = len(y)
-    span = self.U.shape[0]
-    cc = np.tile([np.nan],n)
-    for i in range(span,n):
-      cc[i] = self.relative_change(y,idx=i,smooth=smooth)
-    return cc
+    def relative_change_trace(self, y, idx_current=-1, len_trace=50, smooth=True):
+        """
+        Calculate the trace of relative changes.
+        
+        Args:
+            y: Input vector
+            idx_current: Current index (default: -1)
+            len_trace: Length of the trace to consider (default: 50)
+            smooth: Whether to apply smoothing (default: True)
+        
+        Returns:
+            Array of relative changes
+        """
+        cc = self.relative_change_all(y, smooth=smooth)
+        return cc[(idx_current - len_trace):idx_current]
 
-  def converged_all(self,y,tol=1e-4,smooth=True):
-    cc = self.relative_change_all(y,smooth=smooth)
-    return np.abs(cc)<tol
+    def relative_change_all(self, y, smooth=True):
+        """
+        Calculate relative changes for all possible subsets of y.
+        
+        Args:
+            y: Input vector
+            smooth: Whether to apply smoothing (default: True)
+        
+        Returns:
+            Array of relative changes for all subsets
+        """
+        n = len(y)
+        span = self.U.shape[0]
+        cc = np.tile([np.nan], n)
+        for i in range(span, n):
+            cc[i] = self.relative_change(y, idx=i, smooth=smooth)
+        return cc
+
+    def converged_all(self, y, tol=1e-4, smooth=True):
+        """
+        Check convergence for all possible subsets of y.
+        
+        Args:
+            y: Input vector
+            tol: Convergence tolerance (default: 1e-4)
+            smooth: Whether to apply smoothing (default: True)
+        
+        Returns:
+            Boolean array indicating convergence for each subset
+        """
+        cc = self.relative_change_all(y, smooth=smooth)
+        return np.abs(cc) < tol
 
 class ModelTrainer(object): #goal to change this to tf.module?
   """
