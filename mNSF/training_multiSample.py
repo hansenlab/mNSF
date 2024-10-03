@@ -338,7 +338,74 @@ def _train_model_fixed_lr(self, list_tro, list_Dtrain, list_D__, ckpt_mgr, Dval=
         pickle_freq (int, optional): Frequency of saving pickle files.
         check_convergence (bool): Whether to check for convergence.
     """
-    # ... (rest of the method implementation)
+    ptic,wtic = self.checkpoint(ckpt_mgr, process_time()-ptic, time()-wtic)
+    self.loss["train"] = rpad(self.loss["train"],num_epochs+1)
+    if pickle_freq is None: #only pickle at the end
+      pickle_freq = num_epochs
+    msg = '{:04d} train: {:.3e}'
+    if Dval:
+      msg += ', val: {:.3e}'
+      self.loss["val"] = rpad(self.loss["val"],num_epochs+1)
+    msg2 = "" #modified later to include rel_chg
+    cvg = 0 #increment each time we think it has converged
+    cvg_normalized=0
+    cc = ConvergenceChecker(span)
+    while (not self.converged) and (self.epoch < num_epochs):
+      epoch_loss = tf.keras.metrics.Mean()
+      chol=(self.epoch % kernel_hp_update_freq==0)
+      trl=0.0
+      nsample=len(list_Dtrain)
+      for ksample in range(0,nsample):
+        list_tro[ksample].model.Z=list_D__[ksample]["Z"]
+        Dtrain_ksample = list_Dtrain[ksample]
+        for D in Dtrain_ksample: #iterate through each of the batches 
+          epoch_loss.update_state(list_tro[ksample].model.train_step( D, list_tro[ksample].optimizer, list_tro[ksample].optimizer_k,
+                                   Ntot=list_tro[ksample].model.delta.shape[1], chol=True))
+          trl = trl + epoch_loss.result().numpy()
+      W_updated=list_tro[ksample].model.W-list_tro[ksample].model.W
+      for ksample in range(0,nsample):
+      	W_updated = W_updated+ (list_tro[ksample].model.W / nsample)
+      self.epoch.assign_add(1)
+      i = self.epoch.numpy()
+      self.loss["train"][i] = trl
+
+      ## check for nan in any sample loadings
+      for fit_i in list_tro:
+        if np.isnan(fit_i.model.W).any():
+          print('NaN in sample ' + str(list_tro.index(fit_i) + 1))
+
+      if not np.isfinite(trl): ### modified
+        print("training loss calculated at the point of divergence: ")
+        print(trl)
+        raise NumericalDivergenceError###!!!NumericalDivergenceError
+      if i%status_freq==0 or i==num_epochs:
+        if Dval:
+          val_loss = self.model.validation_step(Dval, S=S, chol=False).numpy()
+          self.loss["val"][i] = val_loss
+        if i>span and check_convergence: #checking for convergence
+          rel_chg = cc.relative_change(self.loss["train"],idx=i)
+          print("rel_chg")
+          print(rel_chg)
+          msg2 = ", chg: {:.2e}".format(-rel_chg)
+          if abs(rel_chg)<tol: cvg+=1
+          else: cvg=0   
+          if test_cvdNorm:
+          	rel_chg_normalized=cc.relative_chg_normalized(self.loss["train"],idx_current=i) 
+          	print("rel_chg_normalized")
+          	print(rel_chg_normalized)
+          	if(-(rel_chg_normalized)<tol_norm): cvg_normalized+=1 # positive values of rel_chg_normalized indicates increase of loss throughout the past 10 iterations
+          if cvg>=2 or cvg_normalized>=2: #i.e. either convergence or normalized convergence has been detected twice in a row
+            self.converged=True
+            pickle_freq = i #ensures final pickling will happen
+            self.loss = truncate_history(self.loss, i)
+        if verbose:
+          if Dval: print(msg.format(i,trl,val_loss)+msg2)
+          else: print(msg.format(i,trl)+msg2)
+      if i%ckpt_freq==0:
+        ptic,wtic = self.checkpoint(ckpt_mgr, process_time()-ptic, time()-wtic)
+      if self.pickle_path and i%pickle_freq==0:
+        ptic,wtic = self.pickle(process_time()-ptic, time()-wtic)
+
 
 def train_model(self, list_tro, list_Dtrain, list_D__, lr_reduce=0.5, maxtry=10, 
                 verbose=True, ckpt_freq=50, test_cvdNorm=False, **kwargs):
@@ -356,4 +423,53 @@ def train_model(self, list_tro, list_Dtrain, list_D__, lr_reduce=0.5, maxtry=10,
         test_cvdNorm (bool): Whether to test normalized convergence.
         **kwargs: Additional arguments passed to _train_model_fixed_lr.
     """
-    # ... (rest of the method implementation)
+    ptic=process_time()
+    wtic=time()
+    tries=0
+    epoch0=self.epoch.numpy() #usually zero, unless loaded from a pickle file
+    with TemporaryDirectory() as ckpth:
+      if verbose: print("Temporary checkpoint directory: {}".format(ckpth))
+      mgr = tf.train.CheckpointManager(self.ckpt, directory=ckpth, max_to_keep=maxtry)
+      while tries < maxtry:
+        try:
+          self._train_model_fixed_lr(list_tro,list_Dtrain, list_D__, mgr, 
+                                     ckpt_freq=ckpt_freq,
+                                     **kwargs)
+          if self.epoch>=len(self.loss["train"])-1: break #finished training
+        except (tf.errors.InvalidArgumentError,NumericalDivergenceError) as err: #cholesky failure
+          # plot loss when diverges          
+          tr = np.array(self.loss["train"])
+          plt.figure()
+          plt.plot(tr,c='blue',label="train")
+          plt.xlabel("epoch")
+          plt.ylabel("ELBO loss")
+          plt.title("Try " + str(tries))
+          plt.savefig("loss" + str(tries) + ".png")
+          plt.show()
+          plt.clf()
+          #
+          tries+=1
+          print("tries")
+          print(tries)
+          if tries==maxtry: raise err
+          if verbose:
+            msg = "{:04d} numerical instability (try {:d})"
+            print(msg.format(self.epoch.numpy(),tries))
+          new_epoch=0
+          self.epoch.assign(0)#modofied
+          ckpt = path.join(ckpth,"ckpt-{}".format(new_epoch))
+          ptic,wtic = self.restore(ckpt)
+          nsample=len(list_Dtrain)
+          for ksample in range(0,nsample):
+            with open('fit_'+ str(ksample+1) +'_restore.pkl', 'rb') as inp:
+              list_tro[ksample].model = pickle.load(inp)  
+          lr_old,lr_new=self.multiply_lr(lr_reduce)
+          if verbose:
+            msg = "{:04d} learning rate: {:.2e}"
+            print(msg.format(new_epoch,lr_new))
+    if verbose:
+      msg = "{:04d} training complete".format(self.epoch.numpy())
+      if self.converged:
+        print(msg+", converged.")
+      else:
+        print(msg+", reached maximum epochs.")
