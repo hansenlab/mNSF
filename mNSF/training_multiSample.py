@@ -1,10 +1,35 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Classes and functions for training and saving models
+ModelTrainer Class for Multi-sample Non-negative Spatial Factorization (mNSF)
 
-@author: Yi Wang based on earlier work by Will Townes for the NSF package. 
+This file contains the ModelTrainer class, which is responsible for training and managing
+the mNSF model. It includes methods for:
+
+1. Learning rate adjustment
+2. Checkpoint management
+3. Model serialization (pickling)
+4. Training loop implementation
+5. Convergence checking
+
+The ModelTrainer class handles both single-epoch training with a fixed learning rate
+(_train_model_fixed_lr) and multi-epoch training with automatic learning rate adjustment
+(train_model). It also provides utilities for saving and loading model states, updating
+training times, and managing the training process across multiple samples.
+
+Key features:
+- Supports multiple samples and datasets
+- Implements adaptive learning rate
+- Provides convergence checking mechanisms
+- Handles model checkpointing and serialization
+- Supports both CPU and GPU training
+
+This class is a core component of the mNSF package, designed for analyzing spatial
+transcriptomics data across multiple samples without requiring alignment.
+
+Author: Yi Wang (based on earlier work by Will Townes for the NSF package)
 """
+
 import pickle
 import pandas as pd
 import numpy as np
