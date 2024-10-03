@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Classes and functions for training and saving models
+Classes and functions for training and saving multi-sample Non-negative Spatial Factorization (mNSF) models
+
+This module implements the core functionality for training mNSF models, including:
+- Model initialization
+- Training loop management
+- Convergence checking
+- Checkpointing and model saving
+- Error handling and learning rate adjustment
 
 @author: Yi Wang based on earlier work by Will Townes for the NSF package. 
 """
+# Import necessary libraries
+
 import pickle
 import pandas as pd
 import numpy as np
@@ -18,31 +27,51 @@ import matplotlib.pyplot as plt
 from mNSF.NSF.misc import mkdir_p, pickle_to_file, unpickle_from_file, rpad
 from mNSF.NSF import training,visualize
 
-### check tv objects memory usage
+# Import TensorFlow Probability for transformed variables and bijectors
+# These are used for constrained optimization and parameter transformations
 import tensorflow_probability as tfp
 tv = tfp.util.TransformedVariable
 tfb = tfp.bijectors
 
+# Set default float type for consistency across the module
 dtp = "float32"
 
 
+# Function to save objects using pickle
 def save_object(obj, filename):
     with open(filename, 'wb') as outp:  # Overwrites any existing file.
         pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
 
 
+# Main function to train mNSF model
 def train_model_mNSF(list_fit_,pickle_path_,
             list_Dtrain_,list_D_,legacy=False,test_cvdNorm=False, maxtry=10, lr=0.01, **kwargs):
   """
-  run model training for mNSF
-  returns a list of fitted model, where each item in the list is for one sample
+    Run model training for mNSF across multiple samples.
+    
+    Args:
+        list_fit_: List of initial model fits
+        pickle_path_: Path to save pickled models
+        list_Dtrain_: List of training datasets
+        list_D_: List of full datasets
+        legacy: Boolean to use legacy TensorFlow optimizers
+        test_cvdNorm: Boolean to test normalized convergence
+        maxtry: Maximum number of training attempts
+        lr: Initial learning rate
+        **kwargs: Additional arguments passed to train_model
+    
+    Returns:
+        list_fit_: List of trained model fits
   """
+  # Initialize ModelTrainer object for the first sample
   tro_ = ModelTrainer(list_fit_[0],pickle_path=pickle_path_,legacy=legacy, lr=lr)
   list_tro=list()
   nsample=len(list_D_)     
+  # Create ModelTrainer objects for each sample
   for k in range(0,nsample):
     tro_tmp=training.ModelTrainer(list_fit_[k],pickle_path=pickle_path_,legacy=legacy, lr=lr)
     list_tro.append(tro_tmp)
+  # Train the model using the main ModelTrainer object
   tro_.train_model(list_tro,
             list_Dtrain_,list_D_, test_cvdNorm=test_cvdNorm,maxtry=maxtry, **kwargs)
   
@@ -60,11 +89,22 @@ def train_model_mNSF(list_fit_,pickle_path_,
   return list_fit_        
 
 
-
+# Custom error for numerical divergence during training
 class NumericalDivergenceError(ValueError):
   pass
 
+# Function to truncate loss history to the current epoch
 def truncate_history(loss_history, epoch):
+  """
+    Truncate the loss history to the current epoch.
+    
+    Args:
+        loss_history: Dictionary containing loss histories
+        epoch: Current epoch number
+    
+    Returns:
+        Truncated loss history
+  """
   with suppress(AttributeError):
     epoch = epoch.numpy()
   cutoff = epoch+1
