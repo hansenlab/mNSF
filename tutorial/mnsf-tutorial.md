@@ -67,6 +67,7 @@ import sys  # For system-specific parameters and functions
 import pickle  # For serializing and de-serializing Python object structures
 from scanpy import pp  # For preprocessing single-cell data
 from os import path  # For pathname manipulations
+from mNSF import MoranI # For calculating spatial dependeicy of each factor within each sample, using Moran's I
 ```
 
 These libraries provide essential functionality for data manipulation, numerical computations, and machine learning operations used in mNSF. Make sure all these dependencies are installed and up-to-date to avoid any issues when running mNSF.
@@ -284,6 +285,17 @@ Let's break this down:
 
 This will produce a figure with two heatmaps, one for each factor, showing how these factors vary across the spatial dimensions of your sample.
 
+## 9. Calculate Moran's I for each factor
+```python
+for i in range(L):
+    I, p_value = calculate_morans_i(list_D[0]["X"], Fplot[:, i])
+    print(f"Factor {i+1} - Moran's I: {I:.4f}, p-value: {p_value:.4f}")
+```
+```plaintext
+Factor 1 - Moran's I: 0.1983, p-value: 0.0010
+Factor 2 - Moran's I: 0.1776, p-value: 0.0010
+```
+
 You can repeat this process for each sample in your dataset to compare factors across samples. Look for patterns that are consistent across samples, as well as sample-specific variations.
 
 ## 9. Conclusion 
@@ -317,6 +329,4 @@ As with any computational method, it's important to critically evaluate the resu
 
 By leveraging the power of mNSF, you can gain new insights into the spatial organization of gene expression across multiple samples, potentially revealing complex patterns of tissue organization and function that may not be apparent from single-sample analyses.
 
-```plaintext
-Hello, world!
-This is a sample output.
+
