@@ -3,7 +3,7 @@ This GitHub repository is associated with our paper available on bioRxiv: [https
 
 All code to analyze the data and generate figures is available at [https://github.com/hansenlab/mNSF_paper](https://github.com/hansenlab/mNSF_paper)
 
-All code for the analysis in mNSF paper are publicly available at [https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-dlpfc.md](https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-dlpfc.md) (use DLPFC data as example) and [https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-mouse.md](https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-mouse.md) (use mouse saggital section data as example).
+ Tutorials for using mNSF are publicly available at [https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-dlpfc.md](https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-dlpfc.md) (use DLPFC data as example) and [https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-mouse.md](https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-mouse.md) (use mouse saggital section data as example).
 
 
 ## Installation
