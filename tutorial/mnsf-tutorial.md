@@ -1,4 +1,4 @@
-# Tutorial for mNSF Package
+# Tutorial for mNSF Package - DLPFC data example
 
 **Authors:** Yi Wang and Kasper Hansen  
 **Date:** May, 2024
