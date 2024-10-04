@@ -74,31 +74,44 @@ These libraries provide essential functionality for data manipulation, numerical
 
 ## 2. Installation
 
-To install mNSF, follow these detailed steps:
+You can install everything from the PyPI repository using `pip install -e .` but Tensorflow will most likely not install. A safer way would be to use conda to setup most of the packages then use pip to install.
 
-1. Ensure you have Python 3.7 or higher installed. You can check your Python version by running `python --version` in your terminal.
+### Install using pip
 
-2. It's recommended to create a new virtual environment to avoid conflicts with other Python packages. You can create one using:
-   ```
-   python -m venv mnsf_env
-   source mnsf_env/bin/activate  # On Windows, use `mnsf_env\Scripts\activate`
-   ```
+1. Git clone and activate your environment of choice.
+2. [Install tensorflow](https://www.tensorflow.org/install).
+3. `pip install -e .`
 
-3. Install the required dependencies. You can do this all at once using the requirements file in the mNSF repository:
-   ```
-   pip install -r requirements.txt
-   ```
+### Install using conda/mamba
 
-4. Clone the mNSF repository:
-   ```
-   git clone https://github.com/hansenlab/mNSF.git
-   ```
+1. Git clone this repo `git clone https://github.com/hansenlab/mNSF/` and enter `cd mNSF`.
+2. Install `conda`. I recommend this distribution: https://github.com/conda-forge/miniforge. Do not install the full `anaconda`, it's highly bloated.
+3. Create a new environment and install using
 
-5. Navigate to the cloned directory and install the package:
-   ```
-   cd mNSF
-   pip install .
-   ```
+```sh
+conda env create -n mnsf -f environment.yml
+conda activate mnsf
+```
+The package should be available right away.
+
+3. Install tensorflow.
+
+<details>
+  <summary>CPU only</summary>
+  
+    
+    conda install tensorflow
+    
+</details>
+
+<details>
+  <summary>GPU</summary>
+    If you have a GPU and is operating in a Linux system, you can in the `mnsf` environment.
+  
+    
+    conda install tensorflow-gpu
+    
+</details>
 
 If you encounter any issues during installation, check that all dependencies are correctly installed and that you're using a compatible Python version. For more detailed installation instructions or troubleshooting, please refer to the official documentation at: https://github.com/hansenlab/mNSF
 
