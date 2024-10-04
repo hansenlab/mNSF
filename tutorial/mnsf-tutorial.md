@@ -121,7 +121,6 @@ After successful installation, you can import mNSF and its components as follows
 
 ```python
 import mNSF
-sys.path.append(dir_mNSF_functions)
 from mNSF import process_multiSample
 from mNSF.NSF import preprocess, misc, visualize
 from mNSF import training_multiSample
