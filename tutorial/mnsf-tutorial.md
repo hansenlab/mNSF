@@ -340,7 +340,7 @@ hmkw = {"figsize": (4, 4), "bgcol": "white", "subplot_space": 0.1, "marker": "s"
 fig, axes = visualize.multiheatmap(list_D[0]["X"], Fplot, (1, 2), cmap="RdBu", **hmkw)
 ```
 
-![Alt text](image.png)
+![Alt text](dlpfc_tutorial.png)
 
 
 Let's break this down:
@@ -379,7 +379,7 @@ Here's the code to calculate Moran's I for each factor:
 
 ```python
 for i in range(L):
-    I, p_value = calculate_morans_i(list_D[0]["X"], Fplot[:, i])
+    I, p_value = MoranI.calculate_morans_i(list_D[0]["X"], Fplot[:, i])
     print(f"Factor {i+1} - Moran's I: {I:.4f}, p-value: {p_value:.4f}")
 ```
 
