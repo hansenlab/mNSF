@@ -175,8 +175,8 @@ list_D = []
 list_X = []
 
 for ksample in range(nsample):
-    Y = pd.read_csv(f'path/to/Y_features_sele_sample{ksample+1}_500genes.csv')
-    X = pd.read_csv(f'path/to/X_allSpots_sample{ksample+1}.csv')
+    Y = pd.read_csv('path/to/Y_features_sele_sample{ksample+1}_500genes.csv')
+    X = pd.read_csv('path/to/X_allSpots_sample{ksample+1}.csv')
     D = process_multiSample.get_D(X, Y)
     list_D.append(D)
     list_X.append(D["X"])
