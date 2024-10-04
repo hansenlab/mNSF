@@ -344,7 +344,8 @@ hmkw = {"figsize": (4, 4), "bgcol": "white", "subplot_space": 0.1, "marker": "s"
 fig, axes = visualize.multiheatmap(list_D[0]["X"], Fplot, (1, 2), cmap="RdBu", **hmkw)
 ```
 
-![Alt text](mouse_tutorial.png)
+<img src="mouse_tutorial.png" alt="Alt text" width="50%">
+
 
 
 Let's break this down:
