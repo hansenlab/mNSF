@@ -165,7 +165,7 @@ def get_listSampleID(list_D_):
 	
 		
 	
-def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
+def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default",chol=True):
 	"""
 	Initialize mNSF (multi-sample Non-negative Spatial Factorization).
     
@@ -198,7 +198,7 @@ def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
 	J_=list_D_[0]["Y"].shape[1]
 	for ksample in range(0,nsample_):
 		D=list_D_[ksample]
-		fit=pf.ProcessFactorization(J_,L_,D['Z'],psd_kernel=ker,nonneg=True,lik=lik,disp = disp)
+		fit=pf.ProcessFactorization(J_,L_,D['Z'],psd_kernel=ker,nonneg=True,lik=lik,disp = disp, chol = chol)
 		fit.init_loadings(D["Y"],X=D['X'],sz=D["sz"],shrinkage=0.3)
 		list_fit_.append(fit)
 		if ksample==0:
@@ -342,7 +342,6 @@ def rescale_as_lda(factors,loadings,sort=False):
     return W[:,o],eF[:,o],eFsum
   else:
     return W,eF,eFsum,wsum
-
 
 
 
