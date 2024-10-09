@@ -26,7 +26,7 @@ dtp = "float32"
 rng = np.random.default_rng()
 
 class ProcessFactorization(tf.Module):
-  def __init__(self, J, L, Z, lik="poi", chol = True,psd_kernel=tfk.MaternThreeHalves,
+  def __init__(self, J, L, Z, lik="poi", chol = True, X=None, psd_kernel=tfk.MaternThreeHalves,
                nugget=1e-5, length_scale=0.1, disp="default",
                nonneg=False, isotropic=True, feature_means=None, **kwargs):
     """
@@ -98,9 +98,8 @@ class ProcessFactorization(tf.Module):
     self._disp0 = disp
     self._init_misc()
     self.Kuu_chol = tf.Variable(self.eval_Kuu_chol(self.get_kernel()), dtype=dtp, trainable=False)
-    if chol:    
+    if  not(chol):    
       N = X.shape[0]
-      L = self.W.shape[1]
       mu_x = self.beta0+tfl.matmul(self.beta, X, transpose_b=True) #LxN
       self.alpha_x = tfl.cholesky_solve(self.Kuu_chol, self.Kuf) #LxMxN
       self.Kuf = kernel.matrix(self.Z, X) #LxMxN
