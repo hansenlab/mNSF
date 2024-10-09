@@ -250,19 +250,33 @@ class ProcessFactorization_multiSample(tf.Module):
       mu_z = self.get_mu_z()
     if Kuu_chol is None:
       Kuu_chol = self.get_Kuu_chol(kernel=kernel, from_cache=(not chol))
-    N = X.shape[0]
-    L = self.W.shape[1]
-    mu_x = self.beta0+tfl.matmul(self.beta, X, transpose_b=True) #LxN
-    Kuf = kernel.matrix(self.Z, X) #LxMxN
-    Kff_diag = kernel.apply(X, X, example_ndims=1)+self.nugget #LxN
-    alpha_x = tfl.cholesky_solve(Kuu_chol, Kuf) #LxMxN
-    mu_tilde = mu_x + tfl.matvec(alpha_x, self.delta-mu_z, transpose_a=True) #LxN
-    #compute the alpha(x_i)'(K_uu-Omega)alpha(x_i) term
-    a_t_Kchol = tfl.matmul(alpha_x, Kuu_chol, transpose_a=True) #LxNxM
-    aKa = tf.reduce_sum(tf.square(a_t_Kchol), axis=2) #LxN
-    a_t_Omega_tril = tfl.matmul(alpha_x, self.Omega_tril, transpose_a=True) #LxNxM
-    aOmega_a = tf.reduce_sum(tf.square(a_t_Omega_tril), axis=2) #LxN
-    Sigma_tilde = Kff_diag - aKa + aOmega_a #LxN
+    if chol:
+      alpha_x = self.alpha_x
+      N = X.shape[0]
+      L = self.W.shape[1]
+      mu_x = self.beta0+tfl.matmul(self.beta, X, transpose_b=True) #LxN
+      Kuf = self.Kuf
+      Kff_diag = self.Kff_diag
+      mu_tilde = mu_x + tfl.matvec(alpha_x, self.delta-mu_z, transpose_a=True) #LxN
+      a_t_Kchol = self.a_t_Kchol
+      aKa = tf.reduce_sum(tf.square(a_t_Kchol), axis=2) #LxN
+      aOmega_a=self.aOmega_a
+      Sigma_tilde = Kff_diag - aKa + aOmega_a #LxN
+    if (not chol):
+      alpha_x = tfl.cholesky_solve(Kuu_chol, Kuf) #LxMxN
+      N = X.shape[0]
+      L = self.W.shape[1]
+      mu_x = self.beta0+tfl.matmul(self.beta, X, transpose_b=True) #LxN
+      Kuf = kernel.matrix(self.Z, X) #LxMxN
+      Kff_diag = kernel.apply(X, X, example_ndims=1)+self.nugget #LxN
+    
+      mu_tilde = mu_x + tfl.matvec(alpha_x, self.delta-mu_z, transpose_a=True) #LxN
+      #compute the alpha(x_i)'(K_uu-Omega)alpha(x_i) term
+      a_t_Kchol = tfl.matmul(alpha_x, Kuu_chol, transpose_a=True) #LxNxM
+      aKa = tf.reduce_sum(tf.square(a_t_Kchol), axis=2) #LxN
+      a_t_Omega_tril = tfl.matmul(alpha_x, self.Omega_tril, transpose_a=True) #LxNxM
+      aOmega_a = tf.reduce_sum(tf.square(a_t_Omega_tril), axis=2) #LxN
+      Sigma_tilde = Kff_diag - aKa + aOmega_a #LxN
     #print(S)
     #print(L)
     #print(N)
@@ -606,5 +620,4 @@ def init_npf_with_nmf(fit, Y, list_X, list_Z, X=None, sz=1, pseudocount=1e-2, fa
 #fit2=fit1
 #self1_0=fit1
 #self2_0=fit2
-
 
