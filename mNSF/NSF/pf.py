@@ -25,6 +25,7 @@ tfk = tfp.math.psd_kernels
 dtp = "float32"
 rng = np.random.default_rng()
 
+@tf.custom_gradient
 def checkpoint_grad(x):
     y = tf.identity(x)
     def grad(dy):
