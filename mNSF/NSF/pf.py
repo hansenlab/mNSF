@@ -98,12 +98,12 @@ class ProcessFactorization(tf.Module):
     self._disp0 = disp
     self._init_misc()
     self.Kuu_chol = tf.Variable(self.eval_Kuu_chol(self.get_kernel()), dtype=dtp, trainable=False)
-    if chol:
-      self.alpha_x = tfl.cholesky_solve(self.Kuu_chol, Kuf) #LxMxN
+    if chol:    
       N = X.shape[0]
       L = self.W.shape[1]
       mu_x = self.beta0+tfl.matmul(self.beta, X, transpose_b=True) #LxN
-      Kuf = kernel.matrix(self.Z, X) #LxMxN
+      self.alpha_x = tfl.cholesky_solve(self.Kuu_chol, self.Kuf) #LxMxN
+      self.Kuf = kernel.matrix(self.Z, X) #LxMxN
       Kff_diag = kernel.apply(X, X, example_ndims=1)+self.nugget #LxN
     
       mu_tilde = mu_x + tfl.matvec(self.alpha_x, self.delta-mu_z, transpose_a=True) #LxN
