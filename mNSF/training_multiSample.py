@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -388,7 +389,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
                             S=3,
                            verbose=True,num_epochs=500,
                            ptic = process_time(), wtic = time(), ckpt_freq=50, test_cvdNorm=False,
-                           kernel_hp_update_freq=10, status_freq=10,
+                           kernel_hp_update_freq=10, status_freq=10, chol=True,
                            span=100, tol=1e-4, tol_norm = 0.4, pickle_freq=None, check_convergence: bool = True):
     """train_step
     Dtrain, Dval : tensorflow Datasets produced by prepare_datasets_tf func
@@ -423,7 +424,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
       epoch_loss = tf.keras.metrics.Mean()
       #epoch=epoch+1
       #epoch=self.epoch 
-      chol=(self.epoch % kernel_hp_update_freq==0)
+      #chol=(self.epoch % kernel_hp_update_freq==0)
       trl=0.0
       nsample=len(list_Dtrain)
       for ksample in range(0,nsample):
@@ -431,7 +432,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
         Dtrain_ksample = list_Dtrain[ksample]
         for D in Dtrain_ksample: #iterate through each of the batches 
           epoch_loss.update_state(list_tro[ksample].model.train_step( D, list_tro[ksample].optimizer, list_tro[ksample].optimizer_k,
-                                   Ntot=list_tro[ksample].model.delta.shape[1], chol=True))
+                                   Ntot=list_tro[ksample].model.delta.shape[1], chol=chol))
           trl = trl + epoch_loss.result().numpy()
           #print("ksample")
           #print(ksample)
