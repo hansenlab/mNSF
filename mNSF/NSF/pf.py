@@ -99,6 +99,7 @@ class ProcessFactorization(tf.Module):
     self._init_misc()
     self.Kuu_chol = tf.Variable(self.eval_Kuu_chol(self.get_kernel()), dtype=dtp, trainable=False)
     if  not(chol):    
+      kernel = self.kernel 
       N = X.shape[0]
       mu_x = self.beta0+tfl.matmul(self.beta, X, transpose_b=True) #LxN
       self.Kuf = kernel.matrix(self.Z, X) #LxMxN
