@@ -29,8 +29,15 @@ rng = np.random.default_rng()
 def checkpoint_grad(x):
     y = tf.identity(x)
     def grad(dy):
-        return tf.gradients(y, x, dy)[0]
+        if tf.executing_eagerly():
+            with tf.GradientTape() as tape:
+                tape.watch(x)
+                y = tf.identity(x)
+            return tape.gradient(y, x, output_gradients=dy)
+        else:
+            return tf.gradients(y, x, dy)[0]
     return y, grad
+
 
 class ProcessFactorization(tf.Module):
   def __init__(self, J, L, Z, lik="poi", chol = True, X=None, psd_kernel=tfk.MaternThreeHalves,
