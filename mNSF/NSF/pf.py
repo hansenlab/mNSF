@@ -99,7 +99,7 @@ class ProcessFactorization(tf.Module):
     self._init_misc()
     self.Kuu_chol = tf.Variable(self.eval_Kuu_chol(self.get_kernel()), dtype=dtp, trainable=False)
     if chol:
-      self.alpha_x = tfl.cholesky_solve(Kuu_chol, Kuf) #LxMxN
+      self.alpha_x = tfl.cholesky_solve(self.Kuu_chol, Kuf) #LxMxN
       N = X.shape[0]
       L = self.W.shape[1]
       mu_x = self.beta0+tfl.matmul(self.beta, X, transpose_b=True) #LxN
@@ -108,7 +108,7 @@ class ProcessFactorization(tf.Module):
     
       mu_tilde = mu_x + tfl.matvec(self.alpha_x, self.delta-mu_z, transpose_a=True) #LxN
       #compute the alpha(x_i)'(K_uu-Omega)alpha(x_i) term
-      self.a_t_Kchol = tfl.matmul(self.alpha_x, Kuu_chol, transpose_a=True) #LxNxM
+      self.a_t_Kchol = tfl.matmul(self.alpha_x, self.Kuu_chol, transpose_a=True) #LxNxM
       aKa = tf.reduce_sum(tf.square(self.a_t_Kchol), axis=2) #LxN
       self.a_t_Omega_tril = tfl.matmul(self.alpha_x, self.Omega_tril, transpose_a=True) #LxNxM
       aOmega_a = tf.reduce_sum(tf.square(self.a_t_Omega_tril ), axis=2) #LxN
