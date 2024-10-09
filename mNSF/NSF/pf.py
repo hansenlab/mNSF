@@ -105,7 +105,7 @@ class ProcessFactorization(tf.Module):
       self.Kuf = kernel.matrix(self.Z, X) #LxMxN
       self.alpha_x = tfl.cholesky_solve(self.Kuu_chol, self.Kuf) #LxMxN
       Kff_diag = kernel.apply(X, X, example_ndims=1)+self.nugget #LxN
-    
+      mu_z = self.get_mu_z()
       mu_tilde = mu_x + tfl.matvec(self.alpha_x, self.delta-mu_z, transpose_a=True) #LxN
       #compute the alpha(x_i)'(K_uu-Omega)alpha(x_i) term
       self.a_t_Kchol = tfl.matmul(self.alpha_x, self.Kuu_chol, transpose_a=True) #LxNxM
