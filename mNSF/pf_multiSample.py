@@ -341,7 +341,7 @@ class ProcessFactorization_multiSample(tf.Module):
     #kl_terms is not affected by minibatching so use reduce_sum
     #print(1111)
     kl_term = tf.reduce_sum(self.eval_kl_term(mu_z, Kuu_chol))
-    Mu = self.sample_predictive_mean(X, sz=sz, S=S, kernel=ker, mu_z=mu_z, Kuu_chol=Kuu_chol)
+    Mu = self.sample_predictive_mean(X, sz=sz, S=S, kernel=ker, mu_z=mu_z, Kuu_chol=Kuu_chol, chol = chol)
     eloglik = likelihoods.lik_to_distr(self.lik, Mu, self.disp).log_prob(Y)
     return J*tf.reduce_mean(eloglik) - kl_term/Ntot
 
