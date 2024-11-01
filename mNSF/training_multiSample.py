@@ -445,7 +445,6 @@ class ModelTrainer(object): #goal to change this to tf.module?
         		list_tro[ksample].model.W.assign(list_tro[ksample-1].model.W.numpy())
         		list_tro[ksample].model.amplitude.assign(list_tro[ksample-1].model.amplitude)
         		list_tro[ksample].model.length_scale.assign(list_tro[ksample-1].model.length_scale)
-        		list_tro[ksample].model.scale_diag.assign(list_tro[ksample-1].model.scale_diag)
         	for D in Dtrain_ksample: #iterate through each of the batches 
         		epoch_loss.update_state(list_tro[ksample].model.train_step( D, list_tro[ksample].optimizer, list_tro[ksample].optimizer_k,
                                    Ntot=list_tro[ksample].model.delta.shape[1], chol=chol))
