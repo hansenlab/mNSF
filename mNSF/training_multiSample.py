@@ -443,9 +443,8 @@ class ModelTrainer(object): #goal to change this to tf.module?
         		list_tro[ksample].model.beta0.assign(list_tro[ksample-1].model.beta0)
         		list_tro[ksample].model.beta.assign(list_tro[ksample-1].model.beta)
         		list_tro[ksample].model.W.assign(list_tro[ksample-1].model.W.numpy())
-        		list_tro[ksample].model.amplitude.assign(list_tro[ksample-1].model.amplitude())
-        		list_tro[ksample].model.length_scale.assign(list_tro[ksample-1].model.length_scale())
-        		list_tro[ksample].model.scale_diag.assign(list_tro[ksample-1].model.scale_diag())
+        		list_tro[ksample].model.amplitude=(list_tro[ksample-1].model.amplitude())
+        		list_tro[ksample].model.length_scale=(list_tro[ksample-1].model.length_scale())
     #Loadings weights
         	for D in Dtrain_ksample: #iterate through each of the batches 
         		epoch_loss.update_state(list_tro[ksample].model.train_step( D, list_tro[ksample].optimizer, list_tro[ksample].optimizer_k,
