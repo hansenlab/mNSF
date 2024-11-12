@@ -108,7 +108,7 @@ def get_D_fromAnnData(ad):
 	return D
 
 
-def get_listD_chunked(list_D_,list_nchunk=[False]*len(list_D_)):
+def get_listD_chunked(list_D_,list_nchunk=[1]*len(list_D_)):
 	"""
 	Prepare the training data by creating TensorFlow Datasets.
     
