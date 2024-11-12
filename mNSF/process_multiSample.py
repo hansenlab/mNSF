@@ -174,6 +174,8 @@ def get_listDtrain(list_D_,nbatch=1,list_nchunk=None):
 		nspot = X.shape[1]
 		nspot_perChunk = int(nspot/nchunk)
 		for kchunk in range(0,nchunk):
+			print("kchunk")
+			print(kchunk)
 			st = (kchunk-1)*nspot_perChunk
 			end_ = kchunk*nspot_perChunk
 			if (kchunk==nchunk-1):end_=nspot
