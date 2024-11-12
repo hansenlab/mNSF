@@ -390,7 +390,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
                            verbose=True,num_epochs=500,
                            ptic = process_time(), wtic = time(), ckpt_freq=50, test_cvdNorm=False,
                            kernel_hp_update_freq=10, status_freq=10, chol=True,
-                           span=100, tol=1e-4, tol_norm = 0.4, pickle_freq=None, check_convergence: bool = True, vec_batch = None):
+                           span=100, tol=1e-4, tol_norm = 0.4, pickle_freq=None, check_convergence: bool = True, list_nchunk = None):
     """train_step
     Dtrain, Dval : tensorflow Datasets produced by prepare_datasets_tf func
     ckpt_mgr must store at least 2 checkpoints (max_to_keep)
@@ -427,7 +427,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
       #chol=(self.epoch % kernel_hp_update_freq==0)
       trl=0.0
       nsample=len(list_Dtrain)
-      if vec_batch is None:
+      if list_nchunk is None:
       	for ksample in range(0,nsample):
         	list_tro[ksample].model.Z=list_D__[ksample]["Z"]
         	Dtrain_ksample = list_Dtrain[ksample]
@@ -436,6 +436,9 @@ class ModelTrainer(object): #goal to change this to tf.module?
                                    Ntot=list_tro[ksample].model.delta.shape[1], chol=chol))
         	trl = trl + epoch_loss.result().numpy()
       else:
+	vec_batch =  list()
+	for ksample in range(0,nsample):
+		vec_batch.append([False]*1 + [True]*(ist_nchunk[ksample]-1)) 
       	for ksample in range(0,nsample):
         	list_tro[ksample].model.Z=list_D__[ksample]["Z"]
         	Dtrain_ksample = list_Dtrain[ksample]
