@@ -39,7 +39,10 @@ def _run(
         ninduced = round(list_D_chunked[ksample]["X"].shape[0] * 0.35)
         D_tmp = list_D_chunked[ksample]
         list_D_chunked[ksample]["Z"] = D_tmp["X"][random.sample(range(0, D_tmp["X"].shape[0] - 1), ninduced), :]
-
+        
+    print("len(list_D_chunked)")
+    print(len(list_D_chunked))
+    
     # step 1 initialize model
     fit = process_multiSample.ini_multiSample(list_D_chunked, n_loadings, "nb", chol=False)
     
