@@ -352,11 +352,10 @@ def save_object(obj, filename):
         pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
  
 
-       
         
-def interpret_npf_v3(list_fit,list_X,S=10,**kwargs):
+def interpret_npf_v3(list_fit,list_X,list_nchunk=None, S=10,**kwargs):
   """
-  	Interpret the non-negative process factorization results.
+   Interpret the non-negative process factorization results.
     
     This function samples from the learned Gaussian processes to generate
     interpretable factors and loadings.
@@ -370,13 +369,14 @@ def interpret_npf_v3(list_fit,list_X,S=10,**kwargs):
     Returns:
     Dictionary containing interpretable loadings W, factors eF, and total counts vector
   """
+  listX_chunked = get_listX_chunked(X,list_nchunk)
   nsample=len(list_fit)
-  for ksample in range(0,nsample):
-    Fhat_tmp = misc.t2np(list_fit[ksample].sample_latent_GP_funcs(list_X[ksample],S=S,chol=False)).T #NxL
+  for ksample in range(0,len(listX_chunked)):
+    Fhat_tmp = misc.t2np(list_fit[ksample].sample_latent_GP_funcs(listX_chunked[ksample],S=S,chol=False)).T #NxL
     if ksample==0:
       Fhat_c=Fhat_tmp
     else:
-      Fhat_c=np.concatenate((Fhat_c,Fhat_tmp), axis=0)
+      Fhat_c=np.concatenate((Fhat_c,Fhat_tmp), axis=0)	
   return interpret_nonneg(np.exp(Fhat_c),list_fit[0].W.numpy(),sort=False,**kwargs)
 
 
