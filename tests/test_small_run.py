@@ -6,10 +6,27 @@ import pandas as pd
 from mNSF import process_multiSample, training_multiSample
 
 def load_data(pth: Path, n_sample: int):
+    print(f"Loading data from {pth}")
+    print(f"Number of samples: {n_sample}")
+    
+    # Check if files exist
+    for k in range(1, n_sample + 1):
+        x_file = pth / f"X_sample{k}.csv"
+        y_file = pth / f"Y_sample{k}.csv"
+        print(f"Checking for {x_file}: {x_file.exists()}")
+        print(f"Checking for {y_file}: {y_file.exists()}")
+    
     X = [pd.read_csv(pth / f"X_sample{k}.csv") for k in range(1, n_sample + 1)]
     Y = [pd.read_csv(pth / f"Y_sample{k}.csv") for k in range(1, n_sample + 1)]
+    
+    print("X and Y loaded successfully")
+    
     D = [process_multiSample.get_D(x, y) for x, y in zip(X, Y)]
+    print("D created successfully")
+    
     X = [D[k]["X"] for k in range(0, n_sample)]
+    print("X extracted from D successfully")
+    
     return D, X
 
 def run(
@@ -55,7 +72,6 @@ def run(
         ).to_csv(output_dir / "loadings_spde_smallData.csv")
     )
     factors = inpf12["factors"][:, :n_loadings]
-    D, X = load_data(data_dir, n_sample)
     for k in range(n_sample):
         indices = process_multiSample.get_listSampleID(D)[k].astype(int)
         pd.DataFrame(factors[indices, :]).to_csv(output_dir / f"factors_sample{k + 1:02d}_smallData.csv")
