@@ -58,7 +58,7 @@ def get_D(X,Y):
 	# Rescale spatial coordinates to a standard range
 	X = preprocess.rescale_spatial_coords(X)
 	# Convert to numpy array if not already
-	if hasattr(X, 'to_numpyX = X.to_numpy()
+	if hasattr(X, 'to_numpy'): X = X.to_numpy()
 
 	# Create an AnnData object, which is a standard format for single-cell data
 	ad = AnnData(Y,obsm={"spatial":X})
