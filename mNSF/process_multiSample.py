@@ -131,8 +131,6 @@ def get_listX_chunked(list_X_,list_nchunk=None):
 	for ksample in range(0,nsample):
 		X=list_X_[ksample]
 		nchunk = list_nchunk[ksample]
-		X = D['X']
-		Y = D['Y']
 		nspot = X.shape[1]
 		nspot_perChunk = int(nspot/nchunk)
 		for kchunk in range(0,nchunk):
