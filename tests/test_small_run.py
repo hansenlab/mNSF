@@ -53,7 +53,7 @@ def _run(
     (output_dir / "list_fit_smallData.pkl").write_bytes(pickle.dumps(fit))
 
     # step 3 save results
-    inpf12 = process_multiSample.interpret_npf_v3(fit, X, S=2, lda_mode=False)
+    inpf12 = process_multiSample.interpret_npf_v3(fit, get_listX_chunked(X,list_nchunk), S=2, lda_mode=False)
     (
         pd.DataFrame(
             inpf12["loadings"] * inpf12["totalsW"][:, None],
