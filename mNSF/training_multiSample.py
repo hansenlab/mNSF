@@ -436,9 +436,9 @@ class ModelTrainer(object): #goal to change this to tf.module?
                                    Ntot=list_tro[ksample].model.delta.shape[1], chol=chol))
         	trl = trl + epoch_loss.result().numpy()
       else:
-	vec_batch =  list()
-	for ksample in range(0,nsample):
-		vec_batch.append([False]*1 + [True]*(ist_nchunk[ksample]-1)) 
+      	vec_batch =  list()
+      	for ksample in range(0,nsample):
+	       	vec_batch.append([False]*1 + [True]*(ist_nchunk[ksample]-1)) 
       	for ksample in range(0,nsample):
         	list_tro[ksample].model.Z=list_D__[ksample]["Z"]
         	Dtrain_ksample = list_Dtrain[ksample]
