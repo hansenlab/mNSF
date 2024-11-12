@@ -380,26 +380,6 @@ During training, you should monitor:
 2. Training progress: Watch for convergence
 3. Error messages: May indicate need to adjust parameters
 
-### 6.6 Best Practices
-
-1. **Induced Points Selection**:
-   - Start with 15% of total spots
-   - Increase if results seem unstable
-   - Decrease if memory usage is too high
-   - Monitor impact on biological interpretability
-
-2. **Chunk Size Management**:
-   - Start with 2 chunks per sample
-   - Increase if memory errors occur
-   - Consider your hardware limitations
-   - Balance processing time vs. memory usage
-
-3. **Training Duration**:
-   - Use at least 100 epochs for real data
-   - Monitor convergence of loss function
-   - Consider early stopping if loss plateaus
-   - Balance training time vs. model accuracy
-
 
 ## 7. Visualizing Results
 
