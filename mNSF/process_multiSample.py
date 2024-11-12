@@ -140,9 +140,7 @@ def get_listDtrain(list_D_,nbatch=1,list_nchunk=[False]*len(list_D_)):
 			if (kchunk==nchunk-1):end_=nspot
 			X_chunk=X[st:end_,]
 			Y_chunk=Y[st:end_,]
-			D_chunk = list()
-			D_chunk["X"]=X
-			D_chunk["Y"]=Y
+			D_chunk = get_D(X,Y)
 			list_D_chunk.append(D_chunk)
 	for ksample_splitted in range(0,nsample_splitted):
 		D_chunk=list_D_chunk[ksample]
