@@ -28,8 +28,9 @@ def _run(
 
     # step 0  Data loading
     D, X = load_data(data_dir, n_sample)
-    listDtrain = process_multiSample.get_listDtrain(D)
-    list_D_chunked = process_multiSample.get_listD_chunked(D)
+    list_nchunk = [2,2]
+    listDtrain = process_multiSample.get_listDtrain(D,list_nchunk=list_nchunk)
+    list_D_chunked = process_multiSample.get_listD_chunked(D,list_nchunk=list_nchunk)
     for ksample in range(0, len(list_D_chunked)):
         random.seed(10)
         ninduced = round(list_D_chunked[ksample]["X"].shape[0] * 0.35)
