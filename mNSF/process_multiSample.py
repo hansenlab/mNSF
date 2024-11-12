@@ -369,7 +369,7 @@ def interpret_npf_v3(list_fit,list_X,list_nchunk=None, S=10,**kwargs):
     Returns:
     Dictionary containing interpretable loadings W, factors eF, and total counts vector
   """
-  listX_chunked = get_listX_chunked(X,list_nchunk)
+  listX_chunked = get_listX_chunked(list_X,list_nchunk)
   nsample=len(list_fit)
   for ksample in range(0,len(listX_chunked)):
     Fhat_tmp = misc.t2np(list_fit[ksample].sample_latent_GP_funcs(listX_chunked[ksample],S=S,chol=False)).T #NxL
