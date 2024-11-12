@@ -210,8 +210,8 @@ def get_listDtrain(list_D_,nbatch=1,list_nchunk=None):
 		for kchunk in range(0,nchunk):
 			print("kchunk")
 			print(kchunk)
-			st = (kchunk-1)*nspot_perChunk
-			end_ = kchunk*nspot_perChunk
+			st = (kchunk-)*nspot_perChunk
+			end_ = (1+kchunk)*nspot_perChunk
 			if (kchunk==nchunk-1):end_=nspot
 			X_chunk=X[st:end_,]
 			Y_chunk=Y[st:end_,]
