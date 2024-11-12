@@ -137,8 +137,8 @@ def get_listD_chunked(list_D_,list_nchunk=None):
 		nspot = X.shape[1]
 		nspot_perChunk = int(nspot/nchunk)
 		for kchunk in range(0,nchunk):
-			st = (kchunk-1)*nspot_perChunk
-			end_ = kchunk*nspot_perChunk
+			st = (kchunk)*nspot_perChunk
+			end_ = (kchunk+1)*nspot_perChunk
 			if (kchunk==nchunk-1):end_=nspot
 			X_chunk=X[st:end_,]
 			Y_chunk=Y[st:end_,]
