@@ -183,6 +183,8 @@ def get_listDtrain(list_D_,nbatch=1,list_nchunk=None):
 			Y_chunk=Y[st:end_,]
 			D_chunk = get_D(X,Y)
 			list_D_chunk.append(D_chunk)
+			print("len(list_D_chunk)")
+			print(len(list_D_chunk))
 	for ksample_splitted in range(0,nsample_splitted):
 		D_chunk=list_D_chunk[ksample]
 		Ntr = D_chunk["Y"].shape[0] # Number of observations in this sample
