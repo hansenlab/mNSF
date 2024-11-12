@@ -30,6 +30,9 @@ def _run(
     D, X = load_data(data_dir, n_sample)
     list_nchunk = [2,2]
     listDtrain = process_multiSample.get_listDtrain(D,list_nchunk=list_nchunk)
+    print("len(listDtrain")
+    print(len(listDtrain))
+    
     list_D_chunked = process_multiSample.get_listD_chunked(D,list_nchunk=list_nchunk)
     for ksample in range(0, len(list_D_chunked)):
         random.seed(10)
