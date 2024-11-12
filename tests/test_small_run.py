@@ -34,7 +34,7 @@ def _run(
     for ksample in range(0, len(list_D_chunked)):
         random.seed(10)
         ninduced = round(list_D_chunked[ksample]["X"].shape[0] * 0.35)
-        D_tmp = D[ksample]
+        D_tmp = list_D_chunked[ksample]
         D[ksample]["Z"] = D_tmp["X"][random.sample(range(0, D_tmp["X"].shape[0] - 1), ninduced), :]
 
     # step 1 initialize model
