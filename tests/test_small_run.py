@@ -80,7 +80,7 @@ def run_cli(
     data_dir: str | Path,
     output_dir: str | Path,
     n_loadings: int = 1,
-    n_sample: int = 1,
+    n_sample: int = 2,
     epochs: int = 10,
     legacy: bool = True,
 ):
