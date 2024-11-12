@@ -145,7 +145,7 @@ def get_listD_chunked(list_D_,list_nchunk=None):
 			list_D_chunk.append(D_chunk)
 	return list_D_chunk
 
-def get_listDtrain(list_D_,nbatch=1,list_nchunk=[False]*len(list_D_)):
+def get_listDtrain(list_D_,nbatch=1,list_nchunk=None)):
 	"""
 	Prepare the training data by creating TensorFlow Datasets.
     
@@ -159,6 +159,7 @@ def get_listDtrain(list_D_,nbatch=1,list_nchunk=[False]*len(list_D_)):
     Returns:
     list_Dtrain: List of TensorFlow Datasets for training
 	"""
+	if(list_nchunk is None):list_nchunk=[1]*len(list_D_)
 	list_Dtrain=list()
 	nsample=len(list_D_)
 	# data chunking
