@@ -28,7 +28,6 @@ def _run(
 
     # step 0  Data loading
     D, X = load_data(data_dir, n_sample)
-    ninduced
     listDtrain = process_multiSample.get_listDtrain(D)
     list_D_chunked = process_multiSample.get_listD_chunked(D)
     for ksample in range(0, len(list_D_chunked)):
