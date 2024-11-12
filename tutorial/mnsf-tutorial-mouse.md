@@ -1,4 +1,4 @@
-# Tutorial for mNSF Package - DLPFC data example
+# Tutorial for mNSF Package - mouse sagittal section data example
 
 **Authors:** Yi Wang and Kasper Hansen  
 **Date:** May, 2024
