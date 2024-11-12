@@ -297,30 +297,9 @@ Other possible ways for selecting the number of factors:
 The "best" number of factors often involves a nuanced balance between statistical fit, biological interpretability, computational resources, and research objectives. It's often helpful to try a few different values and compare the results before making a final decision. The process may involve iterative refinement and integration of multiple lines of evidence.
 
 
+## 6. Model Training
 
-## 6. Model Initialization
-
-Now we're ready to initialize the mNSF model:
-
-```python
-list_fit = process_multiSample.ini_multiSample(list_D, L, "nb")
-```
-
-This function does several important things:
-
-1. It initializes the model parameters for all samples simultaneously.
-2. The `L` parameter specifies the number of factors we want to identify, as set earlier.
-3. The "nb" parameter specifies that we're using a negative binomial distribution for the data. This is often appropriate for count data like gene expression, as it can handle overdispersion better than a Poisson distribution.
-
-The function returns a list of initialized model objects, one for each sample. These objects contain the initial parameter values that will be optimized during training.
-
-## 7. Model Training
-
-With the model initialized, we can now train it:
-
-## 7. Model Training
-
-### 7.1 Optimization Techniques
+### 6.1 Optimization Techniques
 
 Before training the model, we'll implement two key optimization techniques that make mNSF practical for large datasets: induced points and data chunking.
 
@@ -336,7 +315,7 @@ Data chunking divides the data into manageable pieces, enabling:
 - Potential parallel processing
 - Better memory management during training
 
-### 7.2 Setting Up Optimization
+### 6.2 Setting Up Optimization
 
 First, let's implement both optimization techniques:
 
@@ -358,7 +337,7 @@ Key parameters to consider:
 - Induced points percentage (15% here): Balance between speed and accuracy
 - Number of chunks per sample (2 here): Depends on dataset size and available memory
 
-### 7.3 Model Initialization
+### 6.3 Model Initialization
 
 Now we can initialize the model with our optimized data structure:
 
@@ -394,14 +373,14 @@ list_fit = training_multiSample.train_model_mNSF(
   - Optimizing model parameters
   - Combining results across chunks
 
-### 7.5 Monitoring Training
+### 6.5 Monitoring Training
 
 During training, you should monitor:
 1. Memory usage: If too high, increase number of chunks
 2. Training progress: Watch for convergence
 3. Error messages: May indicate need to adjust parameters
 
-### 7.6 Best Practices
+### 6.6 Best Practices
 
 1. **Induced Points Selection**:
    - Start with 15% of total spots
@@ -422,7 +401,7 @@ During training, you should monitor:
    - Balance training time vs. model accuracy
 
 
-## 8. Visualizing Results
+## 7. Visualizing Results
 
 After training, we can visualize the results. Here's how to plot the mNSF factors for a sample:
 
@@ -459,7 +438,7 @@ Let's break this down:
 
 This will produce a figure with two heatmaps, one for each factor, showing how these factors vary across the spatial dimensions of your sample.
 
-## 9. Calculate Moran's I for each factor
+## 8. Calculate Moran's I for each factor
 
 After obtaining the spatial factors from mNSF, it's important to quantify how spatially structured these factors are. One way to do this is by calculating Moran's I statistic for each factor. Moran's I is a measure of spatial autocorrelation, which tells us whether similar values tend to cluster together in space.
 
