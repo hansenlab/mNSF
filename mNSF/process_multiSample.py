@@ -108,6 +108,42 @@ def get_D_fromAnnData(ad):
 	return D
 
 
+def get_listD_chunked(list_D_,list_nchunk=[False]*len(list_D_)):
+	"""
+	Prepare the training data by creating TensorFlow Datasets.
+    
+    This function converts the data dictionaries into TensorFlow Dataset objects,
+    which are efficient for training machine learning models.
+    
+    Args:
+    list_D_: List of data dictionaries, one for each sample
+    nbatch: Number of batches to split the data into (default is 1)
+    
+    Returns:
+    list_Dtrain: List of TensorFlow Datasets for training
+	"""
+	list_Dtrain=list()
+	nsample=len(list_D_)
+	# data chunking
+	nsample_splitted = sum(list_nchunk)
+	list_D_chunk = list()
+	for ksample in range(0,nsample):
+		D=list_D_[ksample]
+		nchunk = list_nchunk[ksample]
+		X = D['X']
+		Y = D['Y']
+		nspot = X.shape[1]
+		nspot_perChunk = int(nspot/nchunk)
+		for kchunk in range(0,nchunk):
+			st = (kchunk-1)*nspot_perChunk
+			end_ = kchunk*nspot_perChunk
+			if (kchunk==nchunk-1):end_=nspot
+			X_chunk=X[st:end_,]
+			Y_chunk=Y[st:end_,]
+			D_chunk = get_D(X,Y)
+			list_D_chunk.append(D_chunk)
+	return list_D_chunk
+
 def get_listDtrain(list_D_,nbatch=1,list_nchunk=[False]*len(list_D_)):
 	"""
 	Prepare the training data by creating TensorFlow Datasets.
