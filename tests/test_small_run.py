@@ -88,7 +88,7 @@ def run_cli(
 
 
 def test_small_run():
-    _run("tests/data", ".", n_loadings=1, n_sample=1, legacy=True)
+    _run("tests/data", ".", n_loadings=1, n_sample=2, legacy=True)
 
 
 if __name__ == "__main__":
