@@ -256,42 +256,97 @@ def get_listDtrain(list_D_, nbatch=1, list_nchunk=None):
 
 def ini_multiSample(list_D_, L_, lik='nb', disp="default", chol=True):
     """
-    Initialize mNSF model with chunked data support.
+    Initialize mNSF model with proper handling of chunked data.
     
     Args:
-    list_D_: List of data dictionaries
+    list_D_: List of data dictionaries (can be chunked)
     L_: Number of factors
-    lik: Likelihood function type
+    lik: Likelihood function type ('nb' for negative binomial)
     disp: Dispersion parameter
     chol: Whether to use Cholesky decomposition
     
     Returns:
     list_fit_: List of initialized ProcessFactorization objects
     """
-    # Get total number of spots across all samples for proper indexing
-    total_spots = 0
-    list_sampleID_ = []
+    # First, reconstruct original data structure from chunks
+    original_D = []
+    current_idx = 0
+    sample_indices = []
     
-    for D in list_D_:
-        nspots = D['X'].shape[0]
-        list_sampleID_.append(np.arange(total_spots, total_spots + nspots))
-        total_spots += nspots
+    # Get the number of unique samples by examining data structure
+    sample_sizes = []
+    current_sample = 0
+    current_size = 0
     
-    # Initialize concatenated data arrays
-    X_concatenated = np.concatenate([D['X'] for D in list_D_], axis=0)
-    Z_concatenated = np.concatenate([D['Z'] for D in list_D_], axis=0)
-    Y_concatenated = np.concatenate([D['Y'] for D in list_D_], axis=0)
-    sz_concatenated = np.concatenate([D['sz'] for D in list_D_], axis=0)
+    # Determine original sample sizes from the chunked data
+    for i, D in enumerate(list_D_):
+        if i > 0:
+            # Check if this chunk belongs to a new sample by comparing X coordinates
+            if not np.array_equal(D['X'][:1], list_D_[i-1]['X'][-1:]):
+                sample_sizes.append(current_size)
+                current_size = D['Y'].shape[0]
+                current_sample += 1
+            else:
+                current_size += D['Y'].shape[0]
+        else:
+            current_size = D['Y'].shape[0]
+    sample_sizes.append(current_size)
+    
+    # Initialize lists to store concatenated data for each original sample
+    X_list = []
+    Y_list = []
+    Z_list = []
+    sz_list = []
+    
+    # Reconstruct original samples from chunks
+    start_idx = 0
+    for size in sample_sizes:
+        end_idx = start_idx
+        X_temp = []
+        Y_temp = []
+        Z_temp = []
+        sz_temp = []
+        
+        # Collect chunks belonging to this sample
+        while end_idx < len(list_D_) and sum(len(d['Y']) for d in Y_temp) < size:
+            X_temp.append(list_D_[end_idx]['X'])
+            Y_temp.append(list_D_[end_idx]['Y'])
+            Z_temp.append(list_D_[end_idx]['Z'])
+            sz_temp.append(list_D_[end_idx]['sz'])
+            end_idx += 1
+        
+        # Concatenate chunks for this sample
+        X_list.append(np.concatenate(X_temp, axis=0))
+        Y_list.append(np.concatenate(Y_temp, axis=0))
+        Z_list.append(np.concatenate(Z_temp, axis=0))
+        sz_list.append(np.concatenate(sz_temp, axis=0))
+        
+        # Store indices for this sample
+        sample_indices.append(np.arange(current_idx, current_idx + size))
+        current_idx += size
+        start_idx = end_idx
+    
+    # Create original data dictionaries
+    original_D = [{'X': X, 'Y': Y, 'Z': Z, 'sz': sz} 
+                 for X, Y, Z, sz in zip(X_list, Y_list, Z_list, sz_list)]
+    
+    # Initialize list_fit_ using reconstructed original data
+    list_fit_ = []
+    nsample_ = len(original_D)
+    J_ = original_D[0]["Y"].shape[1]
+    
+    # Concatenate all data for multi-sample initialization
+    X_concatenated = np.concatenate(X_list, axis=0)
+    Z_concatenated = np.concatenate(Z_list, axis=0)
+    Y_concatenated = np.concatenate(Y_list, axis=0)
+    sz_concatenated = np.concatenate(sz_list, axis=0)
     
     # Initialize individual fits
-    list_fit_ = []
-    nsample_ = len(list_D_)
-    J_ = list_D_[0]["Y"].shape[1]  # Number of genes
-    
     for ksample in range(nsample_):
-        D = list_D_[ksample]
+        D = original_D[ksample]
         fit = pf.ProcessFactorization(
-            J_, L_, D['Z'], 
+            J_, L_, 
+            D['Z'],
             X=D['X'],
             psd_kernel=ker,
             nonneg=True,
@@ -314,15 +369,15 @@ def ini_multiSample(list_D_, L_, lik='nb', disp="default", chol=True):
     
     fit_multiSample.init_loadings(
         Y_concatenated,
-        list_X=[D['X'] for D in list_D_],
-        list_Z=[D['Z'] for D in list_D_],
+        list_X=X_list,
+        list_Z=Z_list,
         sz=sz_concatenated,
         shrinkage=0.3
     )
     
     # Transfer parameters to individual fits
     for ksample in range(nsample_):
-        indices = list_sampleID_[ksample].astype(int)
+        indices = sample_indices[ksample]
         delta = fit_multiSample.delta.numpy()[:, indices]
         beta0 = fit_multiSample.beta0.numpy()[ksample*L_:(ksample+1)*L_, :]
         beta = fit_multiSample.beta.numpy()[ksample*L_:(ksample+1)*L_, :]
@@ -337,7 +392,6 @@ def ini_multiSample(list_D_, L_, lik='nb', disp="default", chol=True):
         save_object(list_fit_[ksample], f'fit_{ksample+1}_restore.pkl')
     
     return list_fit_
-
 def interpret_npf_v3(list_fit, list_X, list_nchunk=None, S=10, **kwargs):
     """
     Interpret the factorization results with support for chunked data.
