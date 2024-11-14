@@ -70,6 +70,10 @@ def run(
     
     # Save factors - with fix for index bounds
     factors = inpf12["factors"][:, :n_loadings]
+    
+    print("factors.shape")
+    print(factors.shape)
+    
     list_sampleID = process_multiSample.get_listSampleID(D)
     
     for k in range(n_sample):
