@@ -440,6 +440,8 @@ class ModelTrainer(object): #goal to change this to tf.module?
       	nsample = len(list_nchunk)
       	for ksample in range(0,nsample):
 	       	vec_batch.append([False]*1 + [True]*(list_nchunk[ksample]-1)) 
+     	print("vec_batch")
+     	print(vec_batch)
       	for ksample in range(0,nsample_chunked):
         	list_tro[ksample].model.Z=list_D__[ksample]["Z"]
         	Dtrain_ksample = list_Dtrain[ksample]
