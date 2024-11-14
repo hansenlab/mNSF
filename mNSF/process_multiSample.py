@@ -255,12 +255,22 @@ def get_listSampleID(list_D_):
 		index_=index_+Ntr
 	return list_sampleID
 	
-	
-		
-	
-def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
+	def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default",chol=True):
 	"""
-	do initialization for mNSF
+	Initialize mNSF (multi-sample Non-negative Spatial Factorization).
+    
+    This function sets up the initial state for the mNSF model, including
+    creating ProcessFactorization objects for each sample and initializing
+    their parameters.
+    
+    Args:
+    list_D_: List of data dictionaries, one for each sample
+    L_: Number of factors to use in the factorization
+    lik: Likelihood function ('nb' for negative binomial)
+    disp: Dispersion parameter for the negative binomial distribution
+    
+    Returns:
+    list_fit_: List of initialized ProcessFactorization objects
 	"""
 	list_X=list()
 	list_Z=list()
@@ -278,7 +288,7 @@ def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
 	J_=list_D_[0]["Y"].shape[1]
 	for ksample in range(0,nsample_):
 		D=list_D_[ksample]
-		fit=pf.ProcessFactorization(J_,L_,D['Z'],psd_kernel=ker,nonneg=True,lik=lik,disp = disp)
+		fit=pf.ProcessFactorization(J_,L_,D['Z'],X=list_X[ksample],psd_kernel=ker,nonneg=True,lik=lik,disp = disp, chol = chol)
 		fit.init_loadings(D["Y"],X=D['X'],sz=D["sz"],shrinkage=0.3)
 		list_fit_.append(fit)
 		if ksample==0:
@@ -320,7 +330,6 @@ def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
 		#save_object(list_para_tmp, 'list_para_'+ str(k+1) +'.pkl')
 		#save_object(list_para_tmp, 'list_para_'+ str(k+1) +'_restore.pkl')
 	return list_fit_
-
 
 
 def save_object(obj, filename):
