@@ -255,7 +255,7 @@ def get_listSampleID(list_D_):
 		index_=index_+Ntr
 	return list_sampleID
 	
-	def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default",chol=True):
+def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default",chol=True):
 	"""
 	Initialize mNSF (multi-sample Non-negative Spatial Factorization).
     
