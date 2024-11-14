@@ -443,6 +443,8 @@ class ModelTrainer(object): #goal to change this to tf.module?
       	print("vec_batch")
       	print(vec_batch)
       	for ksample in range(0,nsample_chunked):
+		print("ksample")
+		print(ksample)
         	list_tro[ksample].model.Z=list_D__[ksample]["Z"]
         	Dtrain_ksample = list_Dtrain[ksample]
         	if vec_batch[ksample]:
