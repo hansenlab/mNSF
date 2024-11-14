@@ -256,6 +256,8 @@ def get_listSampleID(list_D_):
 	return list_sampleID
 	
 	
+		
+	
 def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
 	"""
 	Initialize mNSF (multi-sample Non-negative Spatial Factorization).
@@ -306,6 +308,10 @@ def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
   			Z_concatenated,
   			nsample=nsample_,
   			psd_kernel=ker,nonneg=True,lik=lik)
+  	print("Y_concatenated.shape")
+  	print("sz_concatenated.shape")
+  	print(Y_concatenated.shape)
+  	print(sz_concatenated.shape)
 	fit_multiSample.init_loadings(Y_concatenated,
   			list_X=list_X,
   			list_Z=list_Z,
@@ -331,6 +337,7 @@ def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
 		#save_object(list_para_tmp, 'list_para_'+ str(k+1) +'.pkl')
 		#save_object(list_para_tmp, 'list_para_'+ str(k+1) +'_restore.pkl')
 	return list_fit_
+
 
 def save_object(obj, filename):
     """
