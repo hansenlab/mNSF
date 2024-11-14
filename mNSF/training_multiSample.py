@@ -427,6 +427,8 @@ class ModelTrainer(object): #goal to change this to tf.module?
       #chol=(self.epoch % kernel_hp_update_freq==0)
       trl=0.0
       nsample_chunked=len(list_Dtrain)
+      print("list_nchunk")
+      print(list_nchunk)
       if list_nchunk is None:
       	for ksample in range(0,nsample_chunked):
         	list_tro[ksample].model.Z=list_D__[ksample]["Z"]
