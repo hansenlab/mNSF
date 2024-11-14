@@ -310,7 +310,7 @@ def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
   			psd_kernel=ker,nonneg=True,lik=lik)
 	print("Y_concatenated.shape")
 	print("sz_concatenated.shape")
-  	print(Y_concatenated.shape)
+	print(Y_concatenated.shape)
 	print(sz_concatenated.shape)
 	fit_multiSample.init_loadings(Y_concatenated,
   			list_X=list_X,
