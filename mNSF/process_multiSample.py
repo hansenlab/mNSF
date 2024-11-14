@@ -213,12 +213,12 @@ def get_listDtrain(list_D_,nbatch=1,list_nchunk=None):
 			if (kchunk==nchunk-1):end_=nspot
 			X_chunk=X[st:end_,]
 			Y_chunk=Y[st:end_,]
-			D_chunk = get_D(X,Y)
+			D_chunk = get_D(X_chunk,X_chunk)
 			list_D_chunk.append(D_chunk)
 			print("len(list_D_chunk)")
 			print(len(list_D_chunk))
 	for ksample_splitted in range(0,nsample_splitted):
-		D_chunk=list_D_chunk[ksample]
+		D_chunk=list_D_chunk[ksample_splitted]
 		Ntr = D_chunk["Y"].shape[0] # Number of observations in this sample
 
 		# Convert dictionary to TensorFlow Dataset
