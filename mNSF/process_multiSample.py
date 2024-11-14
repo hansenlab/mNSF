@@ -174,7 +174,7 @@ def get_listD_chunked(list_D_,list_nchunk=None):
 			if (kchunk==nchunk-1):end_=nspot
 			X_chunk=X[st:end_,]
 			Y_chunk=Y[st:end_,]
-			D_chunk = get_D(X,Y)
+			D_chunk = get_D(X_chunk,Y_chunk)
 			list_D_chunk.append(D_chunk)
 	return list_D_chunk
 
