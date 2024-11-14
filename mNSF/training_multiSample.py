@@ -436,10 +436,10 @@ class ModelTrainer(object): #goal to change this to tf.module?
                                    Ntot=list_tro[ksample].model.delta.shape[1], chol=chol))
         	trl = trl + epoch_loss.result().numpy()
       else:
-      	vec_batch =  list()
+      	vec_batch =  []
       	nsample = len(list_nchunk)
       	for ksample in range(0,nsample):
-	       	vec_batch.append([False]*1 + [True]*(list_nchunk[ksample]-1)) 
+	       	vec_batch = vec_batch + [False]*1 + [True]*(list_nchunk[ksample]-1)
       	print("vec_batch")
       	print(vec_batch)
       	for ksample in range(0,nsample_chunked):
