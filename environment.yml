@@ -5,14 +5,14 @@ channels:
 
 dependencies:
   - python=3.10
-  - anndata
+  - anndata=0.8.0
   - click
   - matplotlib
   - numpy
   - pandas
   - pip
   - scanpy
-  - squidpy
+  - squidpy=1.2.2
   - tensorflow=2.13
   - tensorflow-probability=0.21
   - pip:
