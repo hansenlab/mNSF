@@ -390,7 +390,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
                            verbose=True,num_epochs=500,
                            ptic = process_time(), wtic = time(), ckpt_freq=50, test_cvdNorm=False,
                            kernel_hp_update_freq=10, status_freq=10, chol=True,
-                           span=100, tol=1e-4, tol_norm = 0.4, pickle_freq=None, check_convergence: bool = True, list_nchunk = None):
+                           span=100, tol=1e-4, tol_norm = 0.4, pickle_freq=None, check_convergence: bool = True, vec_batch = None):
     """train_step
     Dtrain, Dval : tensorflow Datasets produced by prepare_datasets_tf func
     ckpt_mgr must store at least 2 checkpoints (max_to_keep)
@@ -426,9 +426,9 @@ class ModelTrainer(object): #goal to change this to tf.module?
       #epoch=self.epoch 
       #chol=(self.epoch % kernel_hp_update_freq==0)
       trl=0.0
-      nsample_chunked=len(list_Dtrain)
-      if list_nchunk is None:
-      	for ksample in range(0,nsample_chunked):
+      nsample=len(list_Dtrain)
+      if vec_batch is None:
+      	for ksample in range(0,nsample):
         	list_tro[ksample].model.Z=list_D__[ksample]["Z"]
         	Dtrain_ksample = list_Dtrain[ksample]
         	for D in Dtrain_ksample: #iterate through each of the batches 
@@ -436,15 +436,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
                                    Ntot=list_tro[ksample].model.delta.shape[1], chol=chol))
         	trl = trl + epoch_loss.result().numpy()
       else:
-      	vec_batch =  []
-      	nsample = len(list_nchunk)
       	for ksample in range(0,nsample):
-	       	vec_batch = vec_batch + [False]*1 + [True]*(list_nchunk[ksample]-1)
-      	print("vec_batch")
-      	print(vec_batch)
-      	for ksample in range(0,nsample_chunked):
-        	print("ksample")
-        	print(ksample)
         	list_tro[ksample].model.Z=list_D__[ksample]["Z"]
         	Dtrain_ksample = list_Dtrain[ksample]
         	if vec_batch[ksample]:
@@ -459,8 +451,8 @@ class ModelTrainer(object): #goal to change this to tf.module?
         	trl = trl + epoch_loss.result().numpy()
       W_updated=list_tro[ksample].model.W-list_tro[ksample].model.W
       #print(trl)
-      for ksample in range(0,nsample_chunked):
-      	W_updated = W_updated+ (list_tro[ksample].model.W / nsample_chunked)
+      for ksample in range(0,nsample):
+      	W_updated = W_updated+ (list_tro[ksample].model.W / nsample)
       self.epoch.assign_add(1)
       i = self.epoch.numpy()
       self.loss["train"][i] = trl

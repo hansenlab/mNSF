@@ -1,4 +1,4 @@
-# Tutorial for mNSF Package - mouse sagittal section data example
+# Tutorial for mNSF Package - DLPFC data example
 
 **Authors:** Yi Wang and Kasper Hansen  
 **Date:** May, 2024
@@ -297,91 +297,44 @@ Other possible ways for selecting the number of factors:
 The "best" number of factors often involves a nuanced balance between statistical fit, biological interpretability, computational resources, and research objectives. It's often helpful to try a few different values and compare the results before making a final decision. The process may involve iterative refinement and integration of multiple lines of evidence.
 
 
-## 6. Model Training
 
-### 6.1 Optimization Techniques
+## 6. Model Initialization
 
-Before training the model, we'll implement two key optimization techniques that make mNSF practical for large datasets: induced points and data chunking.
-
-#### Induced Points
-Induced points reduce computational complexity by selecting representative spatial locations. This is crucial for:
-- Managing memory usage with large datasets
-- Reducing computational time
-- Maintaining model accuracy while improving efficiency
-
-#### Data Chunking
-Data chunking divides the data into manageable pieces, enabling:
-- Processing of datasets too large to fit in memory
-- Potential parallel processing
-- Better memory management during training
-
-### 6.2 Setting Up Optimization
-
-First, let's implement both optimization techniques:
+Now we're ready to initialize the mNSF model:
 
 ```python
-# Set up induced points for each sample
-for ksample in range(nsample):
-    # Select 15% of spots as induced points
-    ninduced = round(list_D[ksample]['X'].shape[0] * 0.15)
-    rd_ = random.sample(range(list_D[ksample]['X'].shape[0]), ninduced)
-    list_D[ksample]["Z"] = list_D[ksample]['X'][rd_, :]
-
-# Set up data chunking
-list_nchunk = [2] * nsample  # 2 chunks per sample
-listDtrain = process_multiSample.get_listDtrain(list_D, list_nchunk=list_nchunk)
-list_D_chunked = process_multiSample.get_listD_chunked(list_D, list_nchunk=list_nchunk)
+list_fit = process_multiSample.ini_multiSample(list_D, L, "nb")
 ```
 
-Key parameters to consider:
-- Induced points percentage (15% here): Balance between speed and accuracy
-- Number of chunks per sample (2 here): Depends on dataset size and available memory
+This function does several important things:
 
-### 6.3 Model Initialization
+1. It initializes the model parameters for all samples simultaneously.
+2. The `L` parameter specifies the number of factors we want to identify, as set earlier.
+3. The "nb" parameter specifies that we're using a negative binomial distribution for the data. This is often appropriate for count data like gene expression, as it can handle overdispersion better than a Poisson distribution.
 
-Now we can initialize the model with our optimized data structure:
+The function returns a list of initialized model objects, one for each sample. These objects contain the initial parameter values that will be optimized during training.
+
+## 7. Model Training
+
+With the model initialized, we can now train it:
 
 ```python
-list_fit = process_multiSample.ini_multiSample(list_D_chunked, L, "nb", chol=False)
+list_fit = training_multiSample.train_model_mNSF(list_fit, pp, list_Dtrain, list_D, num_epochs=2)
 ```
 
-Parameters:
-- `list_D_chunked`: Our chunked data structure
-- `L`: Number of factors to identify
-- `"nb"`: Specifies negative binomial distribution
-- `chol=False`: Disables Cholesky decomposition for better memory usage
+This function trains the mNSF model using the prepared data. Here's what each parameter does:
 
-### 7.4 Training the Model
+- `list_fit`: The list of initialized model objects from the previous step.
+- `pp`: The path where preprocessing results are stored.
+- `list_Dtrain`: The training data prepared earlier.
+- `list_D`: The full processed data.
+- `num_epochs=2`: The number of training iterations. 
 
-With optimization techniques in place, we can train the model:
+Note that `num_epochs=2` is likely too low for real-world applications. This is just for demonstration purposes. In practice, you might want to increase this number significantly (e.g., to 100 or 1000) for better results, but be aware that training time will increase accordingly. You may need to experiment to find the right balance between training time and model performance for your specific dataset.
 
-```python
-list_fit = training_multiSample.train_model_mNSF(
-    list_fit,      # Initialized model
-    pp,            # Directory for preprocessing results
-    listDtrain,    # Chunked training data
-    list_D_chunked, # Full chunked dataset
-    num_epochs=100  # Number of training iterations
-)
-```
+The function returns a list of trained model objects, one for each sample. These objects contain the optimized parameters that best explain the spatial patterns in your data according to the mNSF model.
 
-#### Training Parameters:
-- `num_epochs`: Number of training iterations (100 recommended for real data)
-- The function automatically handles:
-  - Processing data chunks
-  - Managing induced points
-  - Optimizing model parameters
-  - Combining results across chunks
-
-### 6.5 Monitoring Training
-
-During training, you should monitor:
-1. Memory usage: If too high, increase number of chunks
-2. Training progress: Watch for convergence
-3. Error messages: May indicate need to adjust parameters
-
-
-## 7. Visualizing Results
+## 8. Visualizing Results
 
 After training, we can visualize the results. Here's how to plot the mNSF factors for a sample:
 
@@ -418,7 +371,7 @@ Let's break this down:
 
 This will produce a figure with two heatmaps, one for each factor, showing how these factors vary across the spatial dimensions of your sample.
 
-## 8. Calculate Moran's I for each factor
+## 9. Calculate Moran's I for each factor
 
 After obtaining the spatial factors from mNSF, it's important to quantify how spatially structured these factors are. One way to do this is by calculating Moran's I statistic for each factor. Moran's I is a measure of spatial autocorrelation, which tells us whether similar values tend to cluster together in space.
 

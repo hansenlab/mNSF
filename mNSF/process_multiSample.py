@@ -57,8 +57,7 @@ def get_D(X,Y):
 	"""
 	# Rescale spatial coordinates to a standard range
 	X = preprocess.rescale_spatial_coords(X)
-	# Convert to numpy array if not already
-	if hasattr(X, 'to_numpy'): X = X.to_numpy()
+	X=X.to_numpy()
 
 	# Create an AnnData object, which is a standard format for single-cell data
 	ad = AnnData(Y,obsm={"spatial":X})
@@ -108,40 +107,8 @@ def get_D_fromAnnData(ad):
 	D["Z"]=D['X']
 	return D
 
-def get_listX_chunked(list_X_,list_nchunk=None):
-	"""
-	Prepare the training data by creating TensorFlow Datasets.
-    
-    This function converts the data dictionaries into TensorFlow Dataset objects,
-    which are efficient for training machine learning models.
-    
-    Args:
-    list_D_: List of data dictionaries, one for each sample
-    nbatch: Number of batches to split the data into (default is 1)
-    
-    Returns:
-    list_Dtrain: List of TensorFlow Datasets for training
-	"""
-	if(list_nchunk is None):list_nchunk=[1]*len(list_X_)
-	list_Dtrain=list()
-	nsample=len(list_X_)
-	# data chunking
-	nsample_splitted = sum(list_nchunk)
-	list_X_chunk = list()
-	for ksample in range(0,nsample):
-		X=list_X_[ksample]
-		nchunk = list_nchunk[ksample]
-		nspot = X.shape[0]
-		nspot_perChunk = int(nspot/nchunk)
-		for kchunk in range(0,nchunk):
-			st = (kchunk)*nspot_perChunk
-			end_ = (kchunk+1)*nspot_perChunk
-			if (kchunk==nchunk-1):end_=nspot
-			X_chunk=X[st:end_,]
-			list_X_chunk.append(X_chunk)
-	return list_X_chunk
 
-def get_listD_chunked(list_D_,list_nchunk=None):
+def get_listDtrain(list_D_,nbatch=1):
 	"""
 	Prepare the training data by creating TensorFlow Datasets.
     
@@ -155,74 +122,14 @@ def get_listD_chunked(list_D_,list_nchunk=None):
     Returns:
     list_Dtrain: List of TensorFlow Datasets for training
 	"""
-	if(list_nchunk is None):list_nchunk=[1]*len(list_D_)
 	list_Dtrain=list()
 	nsample=len(list_D_)
-	# data chunking
-	nsample_splitted = sum(list_nchunk)
-	list_D_chunk = list()
 	for ksample in range(0,nsample):
 		D=list_D_[ksample]
-		nchunk = list_nchunk[ksample]
-		X = D['X']
-		Y = D['Y']
-		nspot = X.shape[0]
-		nspot_perChunk = int(nspot/nchunk)
-		for kchunk in range(0,nchunk):
-			st = (kchunk)*nspot_perChunk
-			end_ = (kchunk+1)*nspot_perChunk
-			if (kchunk==nchunk-1):end_=nspot
-			X_chunk=X[st:end_,]
-			Y_chunk=Y[st:end_,]
-			D_chunk = get_D(X_chunk,Y_chunk)
-			list_D_chunk.append(D_chunk)
-	return list_D_chunk
-
-def get_listDtrain(list_D_,nbatch=1,list_nchunk=None):
-	"""
-	Prepare the training data by creating TensorFlow Datasets.
-    
-    This function converts the data dictionaries into TensorFlow Dataset objects,
-    which are efficient for training machine learning models.
-    
-    Args:
-    list_D_: List of data dictionaries, one for each sample
-    nbatch: Number of batches to split the data into (default is 1)
-    
-    Returns:
-    list_Dtrain: List of TensorFlow Datasets for training
-	"""
-	if(list_nchunk is None):list_nchunk=[1]*len(list_D_)
-	list_Dtrain=list()
-	nsample=len(list_D_)
-	# data chunking
-	nsample_splitted = sum(list_nchunk)
-	list_D_chunk = list()
-	for ksample in range(0,nsample):
-		D=list_D_[ksample]
-		nchunk = list_nchunk[ksample]
-		X = D['X']
-		Y = D['Y']
-		nspot = X.shape[0]
-		nspot_perChunk = int(nspot/nchunk)
-		for kchunk in range(0,nchunk):
-			print("kchunk")
-			print(kchunk)
-			st = (kchunk)*nspot_perChunk
-			end_ = (1+kchunk)*nspot_perChunk
-			if (kchunk==nchunk-1):end_=nspot
-			X_chunk=X[st:end_,]
-			Y_chunk=Y[st:end_,]
-			D_chunk = get_D(X_chunk,X_chunk)
-			list_D_chunk.append(D_chunk)
-			print("len(list_D_chunk)")
-			print(len(list_D_chunk))
-	for ksample_splitted in range(0,nsample_splitted):
-		D_chunk=list_D_chunk[ksample_splitted]
-		Ntr = D_chunk["Y"].shape[0] # Number of observations in this sample
+		Ntr = D["Y"].shape[0] # Number of observations in this sample
 
 		# Convert dictionary to TensorFlow Dataset
-		Dtrain = Dataset.from_tensor_slices(D_chunk)
+		Dtrain = Dataset.from_tensor_slices(D)
 		
 		# Batch the data
 		if (nbatch==1): D_train = Dtrain.batch(round(Ntr)+1)
@@ -258,7 +165,7 @@ def get_listSampleID(list_D_):
 	
 		
 	
-def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
+def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default",chol=True):
 	"""
 	Initialize mNSF (multi-sample Non-negative Spatial Factorization).
     
@@ -291,7 +198,7 @@ def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
 	J_=list_D_[0]["Y"].shape[1]
 	for ksample in range(0,nsample_):
 		D=list_D_[ksample]
-		fit=pf.ProcessFactorization(J_,L_,D['Z'],psd_kernel=ker,nonneg=True,lik=lik,disp = disp)
+		fit=pf.ProcessFactorization(J_,L_,D['Z'],X=list_X[ksample],psd_kernel=ker,nonneg=True,lik=lik,disp = disp, chol = chol)
 		fit.init_loadings(D["Y"],X=D['X'],sz=D["sz"],shrinkage=0.3)
 		list_fit_.append(fit)
 		if ksample==0:
@@ -308,10 +215,6 @@ def ini_multiSample(list_D_,L_, lik = 'nb', disp = "default"):
   			Z_concatenated,
   			nsample=nsample_,
   			psd_kernel=ker,nonneg=True,lik=lik)
-	print("Y_concatenated.shape")
-	print("sz_concatenated.shape")
-	print(Y_concatenated.shape)
-	print(sz_concatenated.shape)
 	fit_multiSample.init_loadings(Y_concatenated,
   			list_X=list_X,
   			list_Z=list_Z,
@@ -354,10 +257,11 @@ def save_object(obj, filename):
         pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
  
 
+       
         
-def interpret_npf_v3(list_fit,list_X,list_nchunk=None, S=10,**kwargs):
+def interpret_npf_v3(list_fit,list_X,S=10,**kwargs):
   """
-   Interpret the non-negative process factorization results.
+  	Interpret the non-negative process factorization results.
     
     This function samples from the learned Gaussian processes to generate
     interpretable factors and loadings.
@@ -371,14 +275,13 @@ def interpret_npf_v3(list_fit,list_X,list_nchunk=None, S=10,**kwargs):
     Returns:
     Dictionary containing interpretable loadings W, factors eF, and total counts vector
   """
-  listX_chunked = get_listX_chunked(list_X,list_nchunk)
   nsample=len(list_fit)
-  for ksample in range(0,len(listX_chunked)):
-    Fhat_tmp = misc.t2np(list_fit[ksample].sample_latent_GP_funcs(listX_chunked[ksample],S=S,chol=False)).T #NxL
+  for ksample in range(0,nsample):
+    Fhat_tmp = misc.t2np(list_fit[ksample].sample_latent_GP_funcs(list_X[ksample],S=S,chol=False)).T #NxL
     if ksample==0:
       Fhat_c=Fhat_tmp
     else:
-      Fhat_c=np.concatenate((Fhat_c,Fhat_tmp), axis=0)	
+      Fhat_c=np.concatenate((Fhat_c,Fhat_tmp), axis=0)
   return interpret_nonneg(np.exp(Fhat_c),list_fit[0].W.numpy(),sort=False,**kwargs)
 
 
@@ -439,3 +342,6 @@ def rescale_as_lda(factors,loadings,sort=False):
     return W[:,o],eF[:,o],eFsum
   else:
     return W,eF,eFsum,wsum
+
+
+
