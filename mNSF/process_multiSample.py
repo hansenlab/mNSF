@@ -41,7 +41,7 @@ import pickle
 ker = tm.psd_kernels.MaternThreeHalves
 
 
-def get_D(X,Y):	
+def get_D(X,Y,rescale_spatial_coords=True):	
 	"""
 	Format the data as a dictionary for processing.
     
@@ -56,7 +56,7 @@ def get_D(X,Y):
     D: Formatted data dictionary containing normalized data and metadata
 	"""
 	# Rescale spatial coordinates to a standard range
-	X = preprocess.rescale_spatial_coords(X)
+	if rescale_spatial_coords: X = preprocess.rescale_spatial_coords(X)
 	X=X.to_numpy()
 
 	# Create an AnnData object, which is a standard format for single-cell data
