@@ -36,6 +36,12 @@ tfb = tfp.bijectors
 # Set default float type for consistency across the module
 dtp = "float32"
 
+# process data chunking
+def get_vec_batch(nsample, nchunk):
+	vec_batch = []
+	for ksample in range(0,nsample):
+		vec_batch= vec_batch + [False] + [True] * (nchunk-1)
+	return vec_batch
 
 # Function to save objects using pickle
 def save_object(obj, filename):
@@ -390,7 +396,7 @@ class ModelTrainer(object): #goal to change this to tf.module?
                            verbose=True,num_epochs=500,
                            ptic = process_time(), wtic = time(), ckpt_freq=50, test_cvdNorm=False,
                            kernel_hp_update_freq=10, status_freq=10, chol=True,
-                           span=100, tol=1e-4, tol_norm = 0.4, pickle_freq=None, check_convergence: bool = True, vec_batch = None):
+                           span=100, tol=1e-4, tol_norm = 0.4, pickle_freq=None, check_convergence: bool = True, nsample = None, nchunk = 1):
     """train_step
     Dtrain, Dval : tensorflow Datasets produced by prepare_datasets_tf func
     ckpt_mgr must store at least 2 checkpoints (max_to_keep)
@@ -407,6 +413,8 @@ class ModelTrainer(object): #goal to change this to tf.module?
     tol: numerical (relative) change below which convergence is declared
     pickle_freq: how often to save the entire object to disk as a pickle file
     """
+    if nsample is None: nsample = len(list_D__)
+    vec_batch = get_vec_batch(nsample, nchunk)
     ptic,wtic = self.checkpoint(ckpt_mgr, process_time()-ptic, time()-wtic)
     self.loss["train"] = rpad(self.loss["train"],num_epochs+1)
     if pickle_freq is None: #only pickle at the end
