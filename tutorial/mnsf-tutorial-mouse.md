@@ -315,8 +315,8 @@ First, let's implement both optimization techniques:
 list_D_chunked=list()
 list_X_chunked=list()
 for ksample in range(0,nsample):
-	Y=pd.read_csv(path.join('//dcs04/hansen/data/ywang/ST/DLPFC/processed_Data//Y_features_sele_sample'+str(ksample*4+1)+'_500genes.csv'))
-	X=pd.read_csv(path.join('//dcs04/hansen/data/ywang/ST/DLPFC/processed_Data///X_allSpots_sample'+str(ksample*4+1)+'.csv'))
+  Y = pd.read_csv(f'path/to/Y_sample{ksample+1}.csv')
+  X = pd.read_csv(f'path/to/X_sample{ksample+1}.csv')
 	list_D_sampleTmp,list_X_sampleTmp = process_multiSample.get_chunked_data(X,Y,nchunk)
 	list_D_chunked = list_D_chunked + list_D_sampleTmp
 	list_X_chunked = list_X_chunked + list_X_sampleTmp
