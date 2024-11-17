@@ -358,7 +358,7 @@ Parameters:
 - `L`: Number of factors to identify
 - `"nb"`: Specifies negative binomial distribution
 
-### 7.4 Training the Model
+### 6.4 Training the Model
 
 With optimization techniques in place, we can train the model:
 
