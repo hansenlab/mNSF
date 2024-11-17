@@ -350,14 +350,13 @@ Key parameters to consider:
 Now we can initialize the model with our optimized data structure:
 
 ```python
-list_fit = process_multiSample.ini_multiSample(list_D_chunked, L, "nb", chol=False)
+list_fit = process_multiSample.ini_multiSample(list_D_chunked, L, "nb")
 ```
 
 Parameters:
 - `list_D_chunked`: Our chunked data structure
 - `L`: Number of factors to identify
 - `"nb"`: Specifies negative binomial distribution
-- `chol=False`: Disables Cholesky decomposition for better memory usage
 
 ### 7.4 Training the Model
 
