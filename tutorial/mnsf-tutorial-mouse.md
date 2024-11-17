@@ -335,9 +335,9 @@ for ksample in range(nsample):
 Setting up induced points:
    - Induced points are a subset of spatial locations used to reduce computational complexity while maintaining model accuracy.
    - For each sample:
-     - `ninduced = round(list_D[ksample]['X'].shape[0] * 0.15)`: Calculates the number of induced points as 15% of total spots.
+     - `ninduced = round(list_Dlist_D_chunked['X'].shape[0] * 0.15)`: Calculates the number of induced points as 15% of total spots.
      - `rd_ = random.sample(...)`: Randomly selects the induced points.
-     - `list_D[ksample]["Z"] = list_D[ksample]['X'][rd_, :]`: Stores the selected points in the data structure.
+     - `list_D_chunked[ksample]["Z"] = list_D_chunked[ksample]['X'][rd_, :]`: Stores the selected points in the data structure.
 
 The number of induced points (15% here) is a trade-off between computational efficiency and accuracy. You might need to adjust this percentage based on your dataset size and available computational resources.
 
