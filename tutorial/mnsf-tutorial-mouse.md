@@ -369,12 +369,14 @@ list_fit = training_multiSample.train_model_mNSF(
     pp,            # Directory for preprocessing results
     list_Dtrain,    # Chunked training data
     list_D_chunked, # Full chunked dataset
-    num_epochs=2  # Number of training iterations
+    num_epochs=2,  # Number of training iterations
+    nsample = nsample, # Number of samples
+    nchunk = nchunk # Number of chunks
 )
 ```
 
 #### Training Parameters:
-- `num_epochs`: Number of training iterations (100 recommended for real data)
+- `num_epochs`: Number of training iterations (500 recommended for real data)
 - The function automatically handles:
   - Processing data chunks
   - Managing induced points
