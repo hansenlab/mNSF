@@ -317,9 +317,9 @@ list_X_chunked=list()
 for ksample in range(0,nsample):
   Y = pd.read_csv(f'path/to/Y_sample{ksample+1}.csv')
   X = pd.read_csv(f'path/to/X_sample{ksample+1}.csv')
-	list_D_sampleTmp,list_X_sampleTmp = process_multiSample.get_chunked_data(X,Y,nchunk)
-	list_D_chunked = list_D_chunked + list_D_sampleTmp
-	list_X_chunked = list_X_chunked + list_X_sampleTmp
+  list_D_sampleTmp,list_X_sampleTmp = process_multiSample.get_chunked_data(X,Y,nchunk)
+  list_D_chunked = list_D_chunked + list_D_sampleTmp
+  list_X_chunked = list_X_chunked + list_X_sampleTmp
 
 #  Extracts the training data from our processed data. This function prepares the data in the format required for model training.
 list_Dtrain = process_multiSample.get_listDtrain(list_D_chunked)
