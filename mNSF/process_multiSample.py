@@ -194,9 +194,7 @@ def get_chunked_data(X, Y, nchunk, method='random'):
             X_chunk = pd.DataFrame(X_chunk)
             D = get_D(X_chunk,Y_chunk,rescale_spatial_coords=False)
             list_D_sampleTmp.append(D)
-            list_X_sampleTmp.append(X_chunk)
-	return list_D_sampleTmp, list_X_sampleTmp
-            
+            list_X_sampleTmp.append(X_chunk)  
     else:
         raise ValueError("method must be one of: 'kmeans' or 'random'")
         
