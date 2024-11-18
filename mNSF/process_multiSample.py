@@ -265,7 +265,7 @@ def get_chunked_data(X, Y, nchunk, method='random'):
     else:
         raise ValueError("method must be one of: 'kmeans' or 'random'")
         
-    return list_D_sampleTmp, list_X_sampleTmp
+    return list_D_sampleTmp, list_X_sampleTmp,chunk_mapping
 
 
 
