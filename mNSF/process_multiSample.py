@@ -147,12 +147,43 @@ def get_vec_batch(nsample, nchunk):
 	return vec_batch
 
 
-def get_chunked_data(X, Y, nchunk):
-	list_D_sampleTmp=list()
-	list_X_sampleTmp=list()
-	nspot=X.shape[0]
-	nspot_perChunk = int(nspot/nchunk)
-	D_unchunked = get_D(X,Y)
+def get_chunked_data(X, Y, nchunk, method='random'):
+    """
+    Split spatial transcriptomics data into chunks using k-means clustering or random assignment.
+    
+    Args:
+    X: Spatial coordinates of the spots/cells
+    Y: Gene expression data (genes x spots/cells) 
+    nchunk: Number of chunks to split the data into
+    method: Chunking method - 'kmeans' or 'random' (default: 'random')
+    
+    Returns:
+    tuple: (list_D_sampleTmp, list_X_sampleTmp) containing chunked data dictionaries and coordinates
+    """
+    list_D_sampleTmp = []
+    list_X_sampleTmp = []
+    nspot = X.shape[0]
+    D_unchunked = get_D(X, Y)
+    
+    if method == 'kmeans':
+        from sklearn.cluster import KMeans
+        kmeans = KMeans(n_clusters=nchunk, random_state=111)
+        clusters = kmeans.fit_predict(X)
+        
+        for k in range(nchunk):
+            mask = clusters == k
+            Y_chunk = D_unchunked['Y'][mask, :]
+            X_chunk = D_unchunked['X'][mask, :]
+            Y_chunk = pd.DataFrame(Y_chunk)
+            X_chunk = pd.DataFrame(X_chunk)
+            D = get_D(X_chunk, Y_chunk, rescale_spatial_coords=False)
+            list_D_sampleTmp.append(D)
+            list_X_sampleTmp.append(X_chunk)
+            
+    elif method == 'random':
+        indices = np.random.permutation(nspot)
+        nspot_perChunk = int(nspot/nchunk)
+        
 	for k in range(0,nchunk):                                                                             
 		st = nspot_perChunk*k
 		end_ = nspot_perChunk*(k+1)                                   
@@ -165,6 +196,13 @@ def get_chunked_data(X, Y, nchunk):
 		list_D_sampleTmp.append(D)
 		list_X_sampleTmp.append(X_chunk)
 	return list_D_sampleTmp, list_X_sampleTmp
+            
+    else:
+        raise ValueError("method must be one of: 'kmeans' or 'random'")
+        
+    return list_D_sampleTmp, list_X_sampleTmp
+
+
 
 def get_listSampleID(list_D_):
 	"""
