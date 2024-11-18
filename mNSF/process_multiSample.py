@@ -184,17 +184,17 @@ def get_chunked_data(X, Y, nchunk, method='random'):
         indices = np.random.permutation(nspot)
         nspot_perChunk = int(nspot/nchunk)
         
-	for k in range(0,nchunk):                                                                             
-		st = nspot_perChunk*k
-		end_ = nspot_perChunk*(k+1)                                   
-		if(k==nchunk-1): end_ = nspot
-		Y_chunk = D_unchunked['Y'][st:end_,:]
-		X_chunk = D_unchunked['X'][st:end_,:]
-		Y_chunk = pd.DataFrame(Y_chunk)
-		X_chunk = pd.DataFrame(X_chunk)
-		D = get_D(X_chunk,Y_chunk,rescale_spatial_coords=False)
-		list_D_sampleTmp.append(D)
-		list_X_sampleTmp.append(X_chunk)
+        for k in range(0,nchunk):                                                                             
+            st = nspot_perChunk*k
+            end_ = nspot_perChunk*(k+1)                                   
+            if(k==nchunk-1): end_ = nspot
+            Y_chunk = D_unchunked['Y'][st:end_,:]
+            X_chunk = D_unchunked['X'][st:end_,:]
+            Y_chunk = pd.DataFrame(Y_chunk)
+            X_chunk = pd.DataFrame(X_chunk)
+            D = get_D(X_chunk,Y_chunk,rescale_spatial_coords=False)
+            list_D_sampleTmp.append(D)
+            list_X_sampleTmp.append(X_chunk)
 	return list_D_sampleTmp, list_X_sampleTmp
             
     else:
