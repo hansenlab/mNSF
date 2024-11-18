@@ -165,21 +165,36 @@ def get_chunked_data(X, Y, nchunk, method='random'):
     nspot = X.shape[0]
     D_unchunked = get_D(X, Y)
     
-    if method == 'kmeans':
-        from sklearn.cluster import KMeans
-        kmeans = KMeans(n_clusters=nchunk, random_state=111)
-        clusters = kmeans.fit_predict(X)
+    if method == 'spatial':
+        # Calculate grid size for approximately equal chunks
+        grid_size = int(np.sqrt(nchunk))
+        x_coords = X[:, 0]
+        y_coords = X[:, 1]
         
-        for k in range(nchunk):
-            mask = clusters == k
+        # Create bins for x and y coordinates
+        x_bins = np.linspace(np.min(x_coords), np.max(x_coords), grid_size + 1)
+        y_bins = np.linspace(np.min(y_coords), np.max(y_coords), grid_size + 1)
+        
+        # Assign spots to spatial bins
+        chunk_id = []
+        for i in range(nspot):
+            x_bin = np.digitize(x_coords[i], x_bins) - 1
+            y_bin = np.digitize(y_coords[i], y_bins) - 1
+            chunk_id.append(x_bin * grid_size + y_bin)
+            
+        chunk_id = np.array(chunk_id)
+        unique_chunks = np.unique(chunk_id)
+        
+        # Create chunks from spatial bins
+        for k in unique_chunks:
+            mask = chunk_id == k
             Y_chunk = D_unchunked['Y'][mask, :]
             X_chunk = D_unchunked['X'][mask, :]
             Y_chunk = pd.DataFrame(Y_chunk)
             X_chunk = pd.DataFrame(X_chunk)
             D = get_D(X_chunk, Y_chunk, rescale_spatial_coords=False)
             list_D_sampleTmp.append(D)
-            list_X_sampleTmp.append(X_chunk)
-            
+            list_X_sampleTmp.append(X_chunk)         
     elif method == 'random':
         indices = np.random.permutation(nspot)
         nspot_perChunk = int(nspot/nchunk)
