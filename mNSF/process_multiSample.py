@@ -168,8 +168,8 @@ def get_chunked_data(X, Y, nchunk, method='random'):
     if method == 'spatial':
         # Calculate grid size for approximately equal chunks
         grid_size = int(np.sqrt(nchunk))
-        x_coords = X[:, 0]
-        y_coords = X[:, 1]
+        x_coords = X.iloc[:, 0]
+        y_coords = X.iloc[:, 1]
         
         # Create bins for x and y coordinates
         x_bins = np.linspace(np.min(x_coords), np.max(x_coords), grid_size + 1)
