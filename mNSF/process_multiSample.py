@@ -412,45 +412,45 @@ def reorder_spatial_factors(factors, list_D, list_X_original):
         list_X_original: list of original spatial coordinate dataframes
     
     Returns:
-        list of reordered factor matrices, one per sample
+        numpy array of reordered factors
     """
-    reordered_factors = []
-    current_idx = 0
+    # Calculate chunks per sample based on the total number of chunks divided by number of samples
+    chunks_per_sample = len(list_D) // len(list_X_original)
+    reordered_factors = np.zeros_like(factors)
+    current_pos = 0
     
-    for sample_idx in range(len(list_X_original)):
-        # Get original number of spots for this sample
-        n_spots_original = list_X_original[sample_idx].shape[0]
+    for sample_idx, X_orig in enumerate(list_X_original):
+        # Get start and end indices for this sample's chunks
+        start_chunk = sample_idx * chunks_per_sample
+        end_chunk = start_chunk + chunks_per_sample if sample_idx < len(list_X_original)-1 else len(list_D)
         
-        # Count total spots in chunks for this sample
-        n_chunks_per_sample = sum(1 for d in list_D[current_idx:] 
-                                if d['sample_id'][0] == sample_idx)
-        
-        # Collect all spot indices and factors for this sample's chunks
-        sample_indices = []
+        # Collect all coordinates and their corresponding factors for this sample
+        sample_coords = []
         sample_factors = []
         
-        for chunk_idx in range(current_idx, current_idx + n_chunks_per_sample):
-            chunk_spots = list_D[chunk_idx]['X']
-            # Get original indices by matching coordinates
-            for idx, spot in chunk_spots.iterrows():
-                orig_idx = list_X_original[sample_idx][
-                    (list_X_original[sample_idx].iloc[:,0] == spot.iloc[0]) & 
-                    (list_X_original[sample_idx].iloc[:,1] == spot.iloc[1])
-                ].index[0]
-                sample_indices.append(orig_idx)
-                sample_factors.append(factors[idx])
+        # Get coordinates and factors from each chunk of this sample
+        for chunk_idx in range(start_chunk, end_chunk):
+            chunk_start = sum(len(list_D[i]['X']) for i in range(chunk_idx))
+            chunk_end = chunk_start + len(list_D[chunk_idx]['X'])
+            
+            sample_coords.extend(list_D[chunk_idx]['X'].values)
+            sample_factors.extend(factors[chunk_start:chunk_end])
         
-        # Convert to numpy arrays
-        sample_indices = np.array(sample_indices)
+        sample_coords = np.array(sample_coords)
         sample_factors = np.array(sample_factors)
         
-        # Create reordered factor matrix
-        reordered = np.zeros((n_spots_original, factors.shape[1]))
-        reordered[sample_indices] = sample_factors
-        
-        reordered_factors.append(reordered)
-        current_idx += n_chunks_per_sample
-        
+        # For each spot in the original data, find its position in the chunked data
+        for orig_idx, orig_spot in X_orig.iterrows():
+            # Find matching position in chunked data
+            matches = np.where(
+                (np.abs(sample_coords[:, 0] - orig_spot.iloc[0]) < 1e-10) & 
+                (np.abs(sample_coords[:, 1] - orig_spot.iloc[1]) < 1e-10)
+            )[0]
+            
+            if len(matches) > 0:
+                reordered_factors[current_pos] = sample_factors[matches[0]]
+            current_pos += 1
+    
     return reordered_factors
 
 def interpret_nonneg(factors,loadings,lda_mode=False,sort=False):
