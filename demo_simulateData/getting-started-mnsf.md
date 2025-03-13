@@ -88,6 +88,8 @@ for i in range(2):
     true_factors = simulated_data['list_factors'][i]
     plot_factors(X, true_factors, f"Sample {i+1}: True Factors")
 ```
+<img src="F1" alt="Alt text" width="50%">
+<img src="F2" alt="Alt text" width="50%">
 
 ## 3. Data Preparation for mNSF
 
@@ -167,6 +169,7 @@ list_fit = training_multiSample.train_model_mNSF(
 
 print("Model training complete!")
 ```
+<img src="loss" alt="Alt text" width="50%">
 
 ## 6. Post-processing and Visualization
 
@@ -192,6 +195,8 @@ results = mnsf_utility.post_processing_multisample(
 mnsf_utility.plot_spatial_factors(list_D, results['factors_list'], output_dir="factor_plots")
 
 ```
+<img src="m1" alt="Alt text" width="50%">
+<img src="m2" alt="Alt text" width="50%">
 
 ## 7. Parameter Selection Guidance
 
