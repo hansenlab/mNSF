@@ -186,60 +186,15 @@ results = mnsf_utility.post_processing_multisample(
 
 # The results contain various outputs:
 # - factors_list: List of factor matrices for each sample
-# - loadings: Gene loadings for the factors
 # - moran_results: Spatial autocorrelation metrics
-# - factor_correlations: Cross-sample factor correlations
-
-# Print deviance explained to assess model fit
-deviance_results = calculate_deviance_explained(list_fit, list_D, list_X)
-for sample, metrics in deviance_results.items():
-    print(f"{sample}: Deviance explained = {metrics['deviance_explained']:.4f}")
 
 # Visualize the extracted factors
 from mnsf_utility import plot_spatial_factors
 plot_spatial_factors(list_D, results['factors_list'], output_dir="factor_plots")
 
-# Visualize top genes for each factor
-from mnsf_utility import plot_top_genes
-plot_top_genes(results['loadings'], n_top=15, output_dir="gene_plots")
 ```
 
-## 7. Comparing Factors with Ground Truth
-
-Since we're working with simulated data, we can compare our extracted factors with the ground truth:
-
-```python
-# Function to compare extracted factors with ground truth
-def compare_with_ground_truth(factors_list, true_factors_list, nsample):
-    print("Comparing extracted factors with ground truth:")
-    
-    for ksample in range(nsample):
-        # Calculate correlations between extracted and true factors
-        extracted = factors_list[ksample]
-        true = true_factors_list[ksample]
-        
-        corr_matrix = np.zeros((extracted.shape[1], true.shape[1]))
-        
-        for i in range(extracted.shape[1]):
-            for j in range(true.shape[1]):
-                corr = np.corrcoef(extracted[:, i], true[:, j])[0, 1]
-                corr_matrix[i, j] = corr
-        
-        print(f"\nSample {ksample+1} factor correlations:")
-        print(pd.DataFrame(
-            corr_matrix,
-            index=[f"Extracted {i+1}" for i in range(extracted.shape[1])],
-            columns=[f"True {j+1}" for j in range(true.shape[1])]
-        ))
-
-# Load true factors
-true_factors_list = simulated_data['list_factors']
-
-# Compare with extracted factors
-compare_with_ground_truth(results['factors_list'], true_factors_list, nsample)
-```
-
-## 8. Parameter Selection Guidance
+## 7. Parameter Selection Guidance
 
 When applying mNSF to your own data, you'll need to decide on several key parameters:
 
@@ -266,7 +221,7 @@ When applying mNSF to your own data, you'll need to decide on several key parame
 - Complex data: 200-500 epochs recommended
 - Monitor the convergence of the loss function to determine when to stop
 
-## 9. Conclusion
+## 8. Conclusion
 
 In this tutorial, we've walked through the complete workflow for using mNSF to analyze multi-sample spatial transcriptomics data:
 
