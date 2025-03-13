@@ -88,7 +88,7 @@ def post_processing_multisample(L, list_fit: List,
     print("Extracting gene loadings...")
     loadings_dict = interpret_npf_multisample(list_fit, list_X, S=S, lda_mode=lda_mode)
     W = loadings_dict["loadings"]
-    loadings = pd.DataFrame(W * loadings_dict["totalsW"][:, None], columns=[f"factor_{i+1}" for i in range(L)])
+    loadings = pd.DataFrame(W * loadings_dict["totalsW"][:, None])
     
     # Save loadings
     if "gene_names" in list_D[0]:
