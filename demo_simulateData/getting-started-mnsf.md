@@ -124,20 +124,15 @@ for ksample in range(nsample):
 list_sampleID = process_multiSample.get_listSampleID(list_D)
 print(f"Prepared {len(list_D)} samples for analysis")
 ```
-## 4. Model Initialization
-```python
-# Extract training data
-list_Dtrain = process_multiSample.get_listDtrain(list_D)
 
-# Initialize the model
-print("Initializing mNSF model...")
-list_fit = process_multiSample.ini_multiSample(list_D, L, "nb")
-```
-## 5. Setting Up Induced Points
+## 4. Setting Up Induced Points
 
 Induced points are a subset of spatial locations used to make the computation more tractable. For our small example, we'll use 20% of the spots as induced points:
 
 ```python
+# Extract training data
+list_Dtrain = process_multiSample.get_listDtrain(list_D)
+
 # Set up induced points for each sample
 for ksample in range(nsample):
     # Select 20% of spots as induced points
@@ -147,8 +142,12 @@ for ksample in range(nsample):
     
     print(f"Sample {ksample+1}: Using {ninduced} induced points out of {list_D[ksample]['X'].shape[0]} spots")
 ```
-
-## 5. Training
+## 5. Model Initialization and Training
+```python
+# Initialize the model
+print("Initializing mNSF model...")
+list_fit = process_multiSample.ini_multiSample(list_D, L, "nb")
+```
 
 Now we'll train our mNSF model:
 
@@ -176,6 +175,7 @@ After training, we can use our utility functions to analyze and visualize the re
 ```python
 # Use the post-processing utility to analyze and save results
 results = mnsf_utility.post_processing_multisample(
+    L=L,
     list_fit=list_fit,
     list_D=list_D,
     list_X=list_X,
