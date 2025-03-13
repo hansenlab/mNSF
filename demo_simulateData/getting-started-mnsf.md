@@ -1,4 +1,4 @@
-# Getting Started with mNSF: Basic Workflow
+# Getting Started with mNSF
 
 **Authors:** Yi Wang, Kasper Hansen, and the mNSF Team  
 **Date:** March 2025
