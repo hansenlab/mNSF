@@ -38,10 +38,10 @@ from os import path
 import pickle
 
 # Import mNSF modules
-from mNSF import process_multiSample
 from mNSF.NSF import preprocess, misc, visualize
 from mNSF import training_multiSample
 from mNSF import MoranI
+from mNSF import process_multiSample
 
 # Set random seeds for reproducibility
 random.seed(42)
@@ -54,87 +54,45 @@ tf.random.set_seed(42)
 For this tutorial, we'll generate a simple synthetic dataset of two samples, each with a small number of spots and genes. This will allow us to run the analysis quickly while illustrating all the key steps.
 
 ```python
-# Function to generate synthetic spatial transcriptomics data
-def generate_synthetic_data(n_spots=100, n_genes=50, n_factors=2, seed=42):
-    np.random.seed(seed)
-    
-    # Generate spatial coordinates in a 10x10 grid
-    x = np.random.uniform(0, 10, n_spots)
-    y = np.random.uniform(0, 10, n_spots)
-    X = np.column_stack((x, y))
-    
-    # Generate synthetic factors
-    factors = np.zeros((n_spots, n_factors))
-    
-    # Factor 1: Gradient from left to right
-    factors[:, 0] = x / 10
-    
-    # Factor 2: Circular pattern around center
-    center_x, center_y = 5, 5
-    distance_from_center = np.sqrt((x - center_x)**2 + (y - center_y)**2)
-    factors[:, 1] = np.exp(-distance_from_center / 3)
-    
-    # Generate gene loadings
-    loadings = np.random.gamma(1, 1, (n_genes, n_factors))
-    
-    # Generate expression data (mean)
-    mean_expr = np.dot(factors, loadings.T)
-    
-    # Generate count data using Poisson distribution
-    counts = np.random.poisson(mean_expr)
-    
-    # Create dataframes
-    # gene_names = [f"gene_{i}" for i in range(n_genes)]
-    # spot_names = [f"spot_{i}" for i in range(n_spots)]
-    
-    # Y = pd.DataFrame(counts, index=spot_names)
-    Y = pd.DataFrame(counts)
-    X_df = pd.DataFrame(X, columns=["x", "y"])
-    
-    return X_df, Y, factors, loadings
+# Set parameters for synthetic data generation
+n_spots = 100  # Number of spots per sample
+n_genes = 50   # Number of genes
+n_factors = 2  # Number of true factors
+nsample = 2    # Number of samples
 
-# Create gene names
-gene_names = [f"gene_{i}" for i in range(n_genes)]
+# Generate synthetic data using process_multiSample.pre_processing_simulation
+synthetic_data = process_multiSample.pre_processing_simulation(
+    n_samples=nsample,
+    n_spots=n_spots,
+    n_genes=n_genes,
+    n_factors=n_factors,
+    output_dir="synthetic_data"
+)
 
-# Generate two synthetic samples
-print("Generating synthetic data...")
-X1, Y1, true_factors1, true_loadings1 = generate_synthetic_data(seed=42)
-X2, Y2, true_factors2, true_loadings2 = generate_synthetic_data(seed=43)
-
-# Save the data to CSV files
-output_dir = "synthetic_data"
-os.makedirs(output_dir, exist_ok=True)
-
-X1.to_csv(f"{output_dir}/X_sample1.csv", index=True)
-Y1.to_csv(f"{output_dir}/Y_sample1.csv", index=True)
-X2.to_csv(f"{output_dir}/X_sample2.csv", index=True)
-Y2.to_csv(f"{output_dir}/Y_sample2.csv", index=True)
-
-print(f"Sample 1: {Y1.shape[0]} spots, {Y1.shape[1]} genes")
-print(f"Sample 2: {Y2.shape[0]} spots, {Y2.shape[1]} genes")
+print(f"Sample 1: {n_spots} spots, {n_genes} genes")
+print(f"Sample 2: {n_spots} spots, {n_genes} genes")
 ```
 
 Let's visualize the true factors in our synthetic data to see what patterns we expect to recover:
 
 ```python
-# Create a function to visualize factors
-def plot_factors(X, factors, title):
-    fig, axes = plt.subplots(1, factors.shape[1], figsize=(10, 4))
+# Plot true factors for each sample
+for ksample in range(nsample):
+    print(f"\nSample {ksample+1} true factors:")
+    # Load true factors
+    true_factors = pd.read_csv(f"synthetic_data/true_factors_sample{ksample+1}.csv").values
+    X = pd.read_csv(f"synthetic_data/X_sample{ksample+1}.csv", index_col=0)
     
-    for i in range(factors.shape[1]):
-        sc = axes[i].scatter(X['x'], X['y'], c=factors[:, i], cmap='viridis', s=50)
-        axes[i].set_title(f'Factor {i+1}')
-        axes[i].set_xlabel('X coordinate')
-        axes[i].set_ylabel('Y coordinate')
+    # Create a figure showing the factors
+    fig, axes = plt.subplots(1, n_factors, figsize=(10, 4))
+    
+    for i in range(n_factors):
+        sc = axes[i].scatter(X['x'], X['y'], c=true_factors[:, i], cmap="viridis", marker="o", s=50)
+        axes[i].set_title(f"Sample {ksample+1}: Factor {i+1}")
         plt.colorbar(sc, ax=axes[i])
     
-    fig.suptitle(title)
     plt.tight_layout()
     plt.show()
-
-# Plot true factors
-plot_factors(X1, true_factors1, "Sample 1: True Factors")
-plot_factors(X2, true_factors2, "Sample 2: True Factors")
 ```
 
 ## 3. Data Preparation for mNSF
@@ -143,7 +101,6 @@ Now that we have our synthetic data, let's prepare it for mNSF analysis:
 
 ```python
 # Set parameters
-nsample = 2  # Number of samples
 nchunk = 1   # We'll use 1 chunk per sample for this small example
 L = 2        # Number of factors to recover (matches our synthetic data)
 
@@ -153,21 +110,17 @@ misc.mkdir_p(mpth)
 pp = path.join(mpth, "pp", str(L))
 misc.mkdir_p(pp)
 
-# Load and process the data
+# Load and process the data using process_multiSample.get_D
 list_D = []
 list_X = []
 
 for ksample in range(nsample):
     # Load data
     sample_idx = ksample + 1
-    Y = pd.read_csv(f"{output_dir}/Y_sample{sample_idx}.csv", index_col=0)
-    X = pd.read_csv(f"{output_dir}/X_sample{sample_idx}.csv", index_col=0)
+    Y = pd.read_csv(f"synthetic_data/Y_sample{sample_idx}.csv", index_col=0)
+    X = pd.read_csv(f"synthetic_data/X_sample{sample_idx}.csv", index_col=0)
     
-    # For this example, we're transposing Y to match mNSF expected format
-    # where genes are rows and spots are columns
-    # Y = Y.T
-    
-    # Process data using mNSF's get_D function
+    # Process data
     D = process_multiSample.get_D(X, Y)
     list_D.append(D)
     list_X.append(D["X"])
@@ -177,10 +130,7 @@ list_sampleID = process_multiSample.get_listSampleID(list_D)
 print(f"Prepared {len(list_D)} samples for analysis")
 ```
 
-## 4. Model Initialization
-
-
-## 5. Setting Up Induced Points
+## 4. Setting Up Induced Points
 
 Induced points are a subset of spatial locations used to make the computation more tractable. For our small example, we'll use 20% of the spots as induced points:
 
@@ -195,7 +145,7 @@ for ksample in range(nsample):
     print(f"Sample {ksample+1}: Using {ninduced} induced points out of {list_D[ksample]['X'].shape[0]} spots")
 ```
 
-## 6. Model Initialization and Training
+## 5. Model Initialization and Training
 
 Now we'll initialize and train our mNSF model:
 
@@ -224,156 +174,121 @@ list_fit = training_multiSample.train_model_mNSF(
 print("Model training complete!")
 ```
 
-## 7. Extracting and Visualizing Results
+## 6. Extracting and Visualizing Results
 
 After training, we can extract the learned factors and visualize them:
 
 ```python
-# Function to extract factors from the trained model
-def extract_factors(fit, D, sample_idx):
-    # Extract the factor values (3 samples for smoother results)
-    Fplot = misc.t2np(fit.sample_latent_GP_funcs(D["X"], S=3, chol=False)).T
-    
-    # Create a figure showing the factors
-    fig, axes = plt.subplots(1, L, figsize=(10, 4))
-    
-    for i in range(L):
-        sc = axes[i].scatter(D["X"][:, 0], D["X"][:, 1], c=Fplot[:, i], cmap="viridis", marker="o", s=50)
-        axes[i].set_title(f"Sample {sample_idx}: Factor {i+1}")
-        plt.colorbar(sc, ax=axes[i])
-    
-    plt.tight_layout()
-    plt.show()
-    
-    return Fplot
+# Use process_multiSample.post_processing_multisample to extract and visualize results
+results = process_multiSample.post_processing_multisample(
+    list_fit=list_fit,
+    list_D=list_D,
+    list_X=list_X,
+    output_dir="mnsf_results",
+    S=100,  # Number of samples for latent function sampling
+    lda_mode=False
+)
 
-# Extract and visualize factors for each sample
-factors_list = []
-for ksample in range(nsample):
-    print(f"Extracting and visualizing factors for sample {ksample+1}...")
-    Fplot = extract_factors(list_fit[ksample], list_D[ksample], ksample+1)
-    factors_list.append(Fplot)
+# The results dictionary contains the extracted factors, loadings, and other metrics
+factors_list = results["factors_list"]
+loadings = results["loadings"]
+
+# Visualize the spatial factors
+process_multiSample.plot_spatial_factors(
+    list_D=list_D,
+    factors_list=factors_list,
+    output_dir="factor_plots",
+    cmap="viridis"
+)
+
+# Display top genes for each factor
+process_multiSample.plot_top_genes(
+    loadings=loadings,
+    n_top=15,
+    output_dir="gene_plots"
+)
 ```
 
-## 8. Quantifying Spatial Structure with Moran's I
+## 7. Quantifying Spatial Structure with Moran's I
 
 Moran's I is a measure of spatial autocorrelation that helps us quantify how structured our factors are spatially:
 
 ```python
-# Calculate Moran's I for each factor in each sample
+# Calculate Moran's I for each factor in each sample (included in post_processing_multisample)
 print("\nQuantifying spatial structure with Moran's I:")
+moran_results = results["moran_results"]
+
 for ksample in range(nsample):
     print(f"\nSample {ksample+1}:")
-    for i in range(L):
-        I, p_value = MoranI.calculate_morans_i(list_D[ksample]["X"], factors_list[ksample][:, i])
-        print(f"  Factor {i+1} - Moran's I: {I:.4f}, p-value: {p_value:.4f}")
+    for factor_result in moran_results[f"sample_{ksample+1}"]:
+        factor_i = factor_result["factor"]
+        morans_i = factor_result["morans_i"]
+        p_value = factor_result["p_value"]
+        print(f"  Factor {factor_i} - Moran's I: {morans_i:.4f}, p-value: {p_value:.4f}")
 ```
 
-## 9. Examining Gene Loadings
+## 8. Examining Gene Loadings
 
 The gene loadings tell us which genes contribute to each factor:
 
 ```python
-# Extract gene loadings
-inpf12=process_multiSample.interpret_npf_v3(list_fit,list_X,S=100,lda_mode=False)
-W = inpf12["loadings"]
-#Wdf=pd.DataFrame(W*inpf12["totals1"
-loadings=pd.DataFrame(W*inpf12["totalsW"][:,None],  columns=range(1,L+1))
-
-
-# Function to visualize top genes for each factor
-def plot_top_genes(loadings, gene_names, n_top=10):
-    fig, axes = plt.subplots(1, loadings.shape[1], figsize=(12, 5))
+# The loadings are already computed from post_processing_multisample
+print("\nTop genes for each factor:")
+for factor in range(L):
+    # Get top 10 genes for this factor
+    top_indices = loadings.iloc[:, factor].argsort().values[-10:][::-1]
+    top_genes = loadings.index[top_indices].tolist()
+    top_values = loadings.iloc[top_indices, factor].values
     
-    for i in range(loadings.shape[1]):
-        # Get top genes for this factor
-        top_indices = np.argsort(loadings[:, i])[-n_top:][::-1]
-        top_genes = [gene_names[idx] for idx in top_indices]
-        top_values = loadings[top_indices, i]
-        
-        # Plot
-        axes[i].barh(top_genes, top_values)
-        axes[i].set_title(f'Factor {i+1} Top Genes')
-        axes[i].set_xlabel('Loading')
-    
-    plt.tight_layout()
-    plt.show()
-
-plot_top_genes(loadings, gene_names)
+    print(f"\nFactor {factor+1} top genes:")
+    for i, (gene, value) in enumerate(zip(top_genes, top_values)):
+        print(f"  {i+1}. {gene}: {value:.4f}")
 ```
 
-## 10. Comparing Factors Across Samples
+## 9. Comparing Factors Across Samples
 
 One of the key advantages of mNSF is its ability to identify common patterns across samples:
 
 ```python
-# Create a correlation matrix between factors across samples
-def compare_factors_across_samples(factors_list, nsample, L):
-    # Initialize correlation matrix
-    corr_matrix = np.zeros((nsample * L, nsample * L))
-    
-    # Calculate correlations
-    for i in range(nsample):
-        for j in range(nsample):
-            for k in range(L):
-                for l in range(L):
-                    # Calculate correlation between factor k in sample i and factor l in sample j
-                    corr = np.corrcoef(factors_list[i][:, k], factors_list[j][:, l])[0, 1]
-                    corr_matrix[i*L + k, j*L + l] = corr
-    
-    # Create labels
-    labels = []
-    for i in range(nsample):
-        for k in range(L):
-            labels.append(f"S{i+1}_F{k+1}")
-    
-    # Plot correlation matrix
-    plt.figure(figsize=(8, 6))
-    plt.imshow(corr_matrix, cmap='coolwarm', vmin=-1, vmax=1)
-    plt.colorbar(label='Correlation')
-    plt.xticks(range(nsample * L), labels, rotation=90)
-    plt.yticks(range(nsample * L), labels)
-    plt.title('Cross-sample Factor Correlations')
-    plt.tight_layout()
-    plt.show()
-    
-    return corr_matrix
+# The factor correlations are already computed from post_processing_multisample
+corr_df = results["factor_correlations"]
 
-# Compare factors across samples
-print("\nComparing factors across samples:")
-corr_matrix = compare_factors_across_samples(factors_list, nsample, L)
+print("\nFactor correlations across samples:")
+print(corr_df)
+
+# Visualize the correlation matrix
+plt.figure(figsize=(8, 6))
+plt.imshow(corr_df.values, cmap='coolwarm', vmin=-1, vmax=1)
+plt.colorbar(label='Correlation')
+plt.xticks(range(len(corr_df.columns)), corr_df.columns, rotation=90)
+plt.yticks(range(len(corr_df.index)), corr_df.index)
+plt.title('Cross-sample Factor Correlations')
+plt.tight_layout()
+plt.show()
 ```
 
-## 11. Saving Results
+## 10. Evaluating Model Performance
 
-Finally, let's save our results for future use:
+We can calculate the deviance explained to quantify how well our model fits the data:
 
 ```python
-# Create a results directory
-results_dir = "mnsf_results_synthetic"
-os.makedirs(results_dir, exist_ok=True)
-
-# Save factors and loadings
-for ksample in range(nsample):
-    # Save factors
-    factors_df = pd.DataFrame(
-        factors_list[ksample], 
-        columns=[f"factor_{i+1}" for i in range(L)]
-    )
-    factors_df.to_csv(f"{results_dir}/factors_sample{ksample+1}.csv", index=False)
-
-# Save loadings
-loadings_df = pd.DataFrame(
-        loadings, 
-        columns=[f"factor_{i+1}" for i in range(L)],
-        index=gene_names
+# Calculate deviance explained
+deviance_metrics = process_multiSample.calculate_deviance_explained(
+    list_fit=list_fit,
+    list_D=list_D,
+    list_X=list_X,
+    S=100
 )
-loadings_df.to_csv(f"{results_dir}/loadings_sample{ksample+1}.csv")
 
-print(f"Results saved to {results_dir}/")
+print("\nModel performance metrics:")
+for sample, metrics in deviance_metrics.items():
+    print(f"{sample}:")
+    print(f"  Null deviance: {metrics['null_deviance']:.2f}")
+    print(f"  Model deviance: {metrics['model_deviance']:.2f}")
+    print(f"  Deviance explained: {metrics['deviance_explained']:.2%}")
 ```
 
-## 12. Parameter Selection Guidance
+## 11. Parameter Selection Guidance
 
 When applying mNSF to your own data, you'll need to decide on several key parameters:
 
@@ -399,6 +314,39 @@ When applying mNSF to your own data, you'll need to decide on several key parame
 - Small datasets: 50-100 epochs may be sufficient
 - Complex data: 200-500 epochs recommended
 - Monitor the convergence of the loss function to determine when to stop
+
+## 12. Simulation Studies
+
+The `process_multiSample.py` module provides several functions for simulation studies:
+
+```python
+# Generate simulated data with batch effects
+batch_data = process_multiSample.create_simulated_dataset_with_batch_effects(
+    n_samples=3,
+    n_spots=100,
+    n_genes=50,
+    n_factors=2,
+    batch_effect_strength=0.5,
+    output_dir="simulated_data_with_batch"
+)
+
+# Generate cell type signatures for deconvolution testing
+cell_type_sigs = process_multiSample.simulate_cell_type_signatures(
+    n_cell_types=4,
+    n_genes=50,
+    n_marker_genes=5,
+    output_dir="simulated_cell_types"
+)
+
+# Generate spatial patterns of cell types
+cell_type_data = process_multiSample.simulate_spatial_cell_type_patterns(
+    cell_type_signatures=cell_type_sigs["signatures"],
+    n_samples=2,
+    n_spots=100,
+    n_factors=2,
+    output_dir="simulated_cell_type_data"
+)
+```
 
 ## 13. Conclusion
 
