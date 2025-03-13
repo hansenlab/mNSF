@@ -189,8 +189,7 @@ results = mnsf_utility.post_processing_multisample(
 # - moran_results: Spatial autocorrelation metrics
 
 # Visualize the extracted factors
-from mnsf_utility import plot_spatial_factors
-plot_spatial_factors(list_D, results['factors_list'], output_dir="factor_plots")
+mnsf_utility.plot_spatial_factors(list_D, results['factors_list'], output_dir="factor_plots")
 
 ```
 
