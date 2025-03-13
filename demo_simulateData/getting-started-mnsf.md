@@ -315,40 +315,7 @@ When applying mNSF to your own data, you'll need to decide on several key parame
 - Complex data: 200-500 epochs recommended
 - Monitor the convergence of the loss function to determine when to stop
 
-## 12. Simulation Studies
-
-The `process_multiSample.py` module provides several functions for simulation studies:
-
-```python
-# Generate simulated data with batch effects
-batch_data = process_multiSample.create_simulated_dataset_with_batch_effects(
-    n_samples=3,
-    n_spots=100,
-    n_genes=50,
-    n_factors=2,
-    batch_effect_strength=0.5,
-    output_dir="simulated_data_with_batch"
-)
-
-# Generate cell type signatures for deconvolution testing
-cell_type_sigs = process_multiSample.simulate_cell_type_signatures(
-    n_cell_types=4,
-    n_genes=50,
-    n_marker_genes=5,
-    output_dir="simulated_cell_types"
-)
-
-# Generate spatial patterns of cell types
-cell_type_data = process_multiSample.simulate_spatial_cell_type_patterns(
-    cell_type_signatures=cell_type_sigs["signatures"],
-    n_samples=2,
-    n_spots=100,
-    n_factors=2,
-    output_dir="simulated_cell_type_data"
-)
-```
-
-## 13. Conclusion
+## 12. Conclusion
 
 In this tutorial, we've walked through the complete workflow for using mNSF to analyze multi-sample spatial transcriptomics data:
 
