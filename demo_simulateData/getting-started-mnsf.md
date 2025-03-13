@@ -17,15 +17,7 @@ This notebook demonstrates a basic end-to-end workflow for using multi-sample No
 Let's start by ensuring you have mNSF and all required dependencies installed.
 
 ```python
-# Check if mNSF is installed
-try:
-    import mNSF
-    print(f"mNSF version: {mNSF.__version__}")
-except ImportError:
-    print("mNSF not found. Installing...")
-    !pip install git+https://github.com/hansenlab/mNSF.git
-    import mNSF
-    print(f"mNSF installed, version: {mNSF.__version__}")
+
 
 # Import other required packages
 import os
