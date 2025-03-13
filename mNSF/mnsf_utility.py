@@ -205,7 +205,7 @@ def interpret_npf_multisample(list_fit: List,
     nsample = len(list_fit)
     L = list_fit[0].L
     W = list_fit[0].W.numpy()
-    
+    L=W.shape[1]                             
     # Calculate average loadings
     all_loadings = []
     for ksample in range(nsample):
