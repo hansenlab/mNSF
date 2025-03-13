@@ -88,12 +88,12 @@ def post_processing_multisample(L, list_fit: List,
     print("Extracting gene loadings...")
     loadings_dict = interpret_npf_multisample(list_fit, list_X, S=S, lda_mode=lda_mode)
     W = loadings_dict["loadings"]
-    loadings = pd.DataFrame(W * loadings_dict["totalsW"][:, None])
+    #loadings = pd.DataFrame(W * loadings_dict["totalsW"][:, None])
     
     # Save loadings
-    if "gene_names" in list_D[0]:
-        loadings.index = list_D[0]["gene_names"]
-    loadings.to_csv(f"{output_dir}/gene_loadings.csv")
+    #if "gene_names" in list_D[0]:
+    #    loadings.index = list_D[0]["gene_names"]
+    #loadings.to_csv(f"{output_dir}/gene_loadings.csv")
     
     # 3. Calculate Moran's I for each factor in each sample
     print("Calculating spatial autocorrelation metrics...")
@@ -127,51 +127,10 @@ def post_processing_multisample(L, list_fit: List,
     # Save correlation matrix
     corr_df = pd.DataFrame(corr_matrix, index=labels, columns=labels)
     corr_df.to_csv(f"{output_dir}/factor_correlations.csv")
-    
-    # 5. Generate UMAP projection of factors across samples (if more than one sample)
-    if nsample > 1:
-        print("Generating UMAP projection of factors...")
-        # Combine factors from all samples
-        all_factors = np.vstack([factors_list[i] for i in range(nsample)])
-        sample_ids = np.concatenate([[i+1] * factors_list[i].shape[0] for i in range(nsample)])
-        
-        # Run UMAP
-        reducer = umap.UMAP(random_state=42)
-        embedding = reducer.fit_transform(all_factors)
-        
-        # Save UMAP results
-        umap_df = pd.DataFrame({
-            'UMAP1': embedding[:, 0],
-            'UMAP2': embedding[:, 1],
-            'sample': sample_ids
-        })
-        umap_df.to_csv(f"{output_dir}/umap_projection.csv", index=False)
-    
-    # 6. Perform clustering on factors to identify spot types
-    print("Performing spot clustering based on factors...")
-    for ksample in range(nsample):
-        # Use KMeans clustering
-        n_clusters = min(5, L+1)  # Default to 5 clusters or L+1, whichever is smaller
-        kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
-        clusters = kmeans.fit_predict(factors_list[ksample])
-        
-        # Calculate silhouette score
-        sil_score = silhouette_score(factors_list[ksample], clusters)
-        
-        # Save clustering results
-        cluster_df = pd.DataFrame({
-            'cluster': clusters,
-            'x': list_D[ksample]["X"][:, 0],
-            'y': list_D[ksample]["X"][:, 1]
-        })
-        cluster_df.to_csv(f"{output_dir}/clusters_sample{ksample+1}.csv", index=False)
-    
     # Return compiled results
     results = {
         "factors_list": factors_list,
-        "loadings": loadings,
         "moran_results": moran_results,
-        "factor_correlations": corr_df,
         "output_dir": output_dir
     }
     
