@@ -36,6 +36,24 @@ import numpy as np
 from tensorflow.data import Dataset
 import pickle
 import pandas as pd
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.decomposition import NMF
+from sklearn.metrics import silhouette_score
+from sklearn.cluster import KMeans
+import tensorflow as tf
+import random
+from scipy.stats import spearmanr, pearsonr
+from scipy.spatial.distance import pdist, squareform
+import umap
+from pathlib import Path
+from typing import List, Dict, Tuple, Union, Optional
+# Import mNSF modules (assuming they're available)
+from mNSF.NSF import misc, visualize
+from mNSF import MoranI
 
 # Define the kernel function for Gaussian Process
 # MaternThreeHalves is a specific covariance function used in Gaussian processes
