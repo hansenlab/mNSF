@@ -36,7 +36,7 @@ from mNSF import training_multiSample
 from mNSF import MoranI
 
 # Import utility functions
-from mnsf_utility import post_processing_multisample, pre_processing_simulation
+from mNSF.mnsf_utility import post_processing_multisample, pre_processing_simulation
 
 # Set random seeds for reproducibility
 random.seed(42)
