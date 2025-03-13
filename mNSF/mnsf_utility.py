@@ -34,7 +34,7 @@ from mNSF import MoranI
 # Post-processing Functions for Multi-sample Analysis
 #######################
 
-def post_processing_multisample(list_fit: List, 
+def post_processing_multisample(L, list_fit: List, 
                                list_D: List[Dict], 
                                list_X: List[np.ndarray],
                                output_dir: str = "mnsf_results",
@@ -67,9 +67,7 @@ def post_processing_multisample(list_fit: List,
     os.makedirs(output_dir, exist_ok=True)
     
     # Extract number of samples and factors
-    nsample = len(list_fit)
-    L = list_fit[0].L
-    
+    nsample = len(list_fit)    
     print(f"Post-processing results for {nsample} samples with {L} factors...")
     
     # 1. Extract factors for each sample
