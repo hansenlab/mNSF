@@ -36,7 +36,8 @@ from mNSF import training_multiSample
 from mNSF import MoranI
 
 # Import utility functions
-from mNSF.mnsf_utility import post_processing_multisample, pre_processing_simulation
+from mNSF import mnsf_utility
+
 
 # Set random seeds for reproducibility
 random.seed(42)
@@ -50,7 +51,7 @@ For this tutorial, we'll generate a simple synthetic dataset of two samples, eac
 
 ```python
 # Using our pre-processing simulation utility
-simulated_data = pre_processing_simulation(
+simulated_data = mnsf_utility.pre_processing_simulation(
     n_samples=2,
     n_spots=100,
     n_genes=50,
@@ -174,7 +175,7 @@ After training, we can use our utility functions to analyze and visualize the re
 
 ```python
 # Use the post-processing utility to analyze and save results
-results = post_processing_multisample(
+results = mnsf_utility.post_processing_multisample(
     list_fit=list_fit,
     list_D=list_D,
     list_X=list_X,
