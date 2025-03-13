@@ -38,10 +38,13 @@ from os import path
 import pickle
 
 # Import mNSF modules
+from mNSF import process_multiSample
 from mNSF.NSF import preprocess, misc, visualize
 from mNSF import training_multiSample
 from mNSF import MoranI
-from mNSF import process_multiSample
+
+# Import utility functions
+from mnsf_utility import post_processing_multisample, pre_processing_simulation
 
 # Set random seeds for reproducibility
 random.seed(42)
@@ -54,45 +57,43 @@ tf.random.set_seed(42)
 For this tutorial, we'll generate a simple synthetic dataset of two samples, each with a small number of spots and genes. This will allow us to run the analysis quickly while illustrating all the key steps.
 
 ```python
-# Set parameters for synthetic data generation
-n_spots = 100  # Number of spots per sample
-n_genes = 50   # Number of genes
-n_factors = 2  # Number of true factors
-nsample = 2    # Number of samples
-
-# Generate synthetic data using process_multiSample.pre_processing_simulation
-synthetic_data = process_multiSample.pre_processing_simulation(
-    n_samples=nsample,
-    n_spots=n_spots,
-    n_genes=n_genes,
-    n_factors=n_factors,
+# Using our pre-processing simulation utility
+simulated_data = pre_processing_simulation(
+    n_samples=2,
+    n_spots=100,
+    n_genes=50,
+    n_factors=2,
     output_dir="synthetic_data"
 )
 
-print(f"Sample 1: {n_spots} spots, {n_genes} genes")
-print(f"Sample 2: {n_spots} spots, {n_genes} genes")
+print(f"Generated synthetic data with:")
+for i in range(2):
+    print(f"Sample {i+1}: {simulated_data['list_Y'][i].shape[0]} spots, {simulated_data['list_Y'][i].shape[1]} genes")
 ```
 
 Let's visualize the true factors in our synthetic data to see what patterns we expect to recover:
 
 ```python
-# Plot true factors for each sample
-for ksample in range(nsample):
-    print(f"\nSample {ksample+1} true factors:")
-    # Load true factors
-    true_factors = pd.read_csv(f"synthetic_data/true_factors_sample{ksample+1}.csv").values
-    X = pd.read_csv(f"synthetic_data/X_sample{ksample+1}.csv", index_col=0)
+# Create a function to visualize factors
+def plot_factors(X, factors, title):
+    fig, axes = plt.subplots(1, factors.shape[1], figsize=(10, 4))
     
-    # Create a figure showing the factors
-    fig, axes = plt.subplots(1, n_factors, figsize=(10, 4))
-    
-    for i in range(n_factors):
-        sc = axes[i].scatter(X['x'], X['y'], c=true_factors[:, i], cmap="viridis", marker="o", s=50)
-        axes[i].set_title(f"Sample {ksample+1}: Factor {i+1}")
+    for i in range(factors.shape[1]):
+        sc = axes[i].scatter(X['x'], X['y'], c=factors[:, i], cmap='viridis', s=50)
+        axes[i].set_title(f'Factor {i+1}')
+        axes[i].set_xlabel('X coordinate')
+        axes[i].set_ylabel('Y coordinate')
         plt.colorbar(sc, ax=axes[i])
     
+    fig.suptitle(title)
     plt.tight_layout()
     plt.show()
+
+# Plot true factors for each sample
+for i in range(2):
+    X = simulated_data['list_X'][i]
+    true_factors = simulated_data['list_factors'][i]
+    plot_factors(X, true_factors, f"Sample {i+1}: True Factors")
 ```
 
 ## 3. Data Preparation for mNSF
@@ -101,6 +102,7 @@ Now that we have our synthetic data, let's prepare it for mNSF analysis:
 
 ```python
 # Set parameters
+nsample = 2  # Number of samples
 nchunk = 1   # We'll use 1 chunk per sample for this small example
 L = 2        # Number of factors to recover (matches our synthetic data)
 
@@ -110,7 +112,7 @@ misc.mkdir_p(mpth)
 pp = path.join(mpth, "pp", str(L))
 misc.mkdir_p(pp)
 
-# Load and process the data using process_multiSample.get_D
+# Load and process the data
 list_D = []
 list_X = []
 
@@ -120,7 +122,7 @@ for ksample in range(nsample):
     Y = pd.read_csv(f"synthetic_data/Y_sample{sample_idx}.csv", index_col=0)
     X = pd.read_csv(f"synthetic_data/X_sample{sample_idx}.csv", index_col=0)
     
-    # Process data
+    # Process data using mNSF's get_D function
     D = process_multiSample.get_D(X, Y)
     list_D.append(D)
     list_X.append(D["X"])
@@ -174,128 +176,84 @@ list_fit = training_multiSample.train_model_mNSF(
 print("Model training complete!")
 ```
 
-## 6. Extracting and Visualizing Results
+## 6. Post-processing and Visualization
 
-After training, we can extract the learned factors and visualize them:
+After training, we can use our utility functions to analyze and visualize the results:
 
 ```python
-# Use process_multiSample.post_processing_multisample to extract and visualize results
-results = process_multiSample.post_processing_multisample(
+# Use the post-processing utility to analyze and save results
+results = post_processing_multisample(
     list_fit=list_fit,
     list_D=list_D,
     list_X=list_X,
-    output_dir="mnsf_results",
-    S=100,  # Number of samples for latent function sampling
+    output_dir="mnsf_results_synthetic",
+    S=100,  # Number of samples for latent function evaluation
     lda_mode=False
 )
 
-# The results dictionary contains the extracted factors, loadings, and other metrics
-factors_list = results["factors_list"]
-loadings = results["loadings"]
+# The results contain various outputs:
+# - factors_list: List of factor matrices for each sample
+# - loadings: Gene loadings for the factors
+# - moran_results: Spatial autocorrelation metrics
+# - factor_correlations: Cross-sample factor correlations
 
-# Visualize the spatial factors
-process_multiSample.plot_spatial_factors(
-    list_D=list_D,
-    factors_list=factors_list,
-    output_dir="factor_plots",
-    cmap="viridis"
-)
+# Print deviance explained to assess model fit
+deviance_results = calculate_deviance_explained(list_fit, list_D, list_X)
+for sample, metrics in deviance_results.items():
+    print(f"{sample}: Deviance explained = {metrics['deviance_explained']:.4f}")
 
-# Display top genes for each factor
-process_multiSample.plot_top_genes(
-    loadings=loadings,
-    n_top=15,
-    output_dir="gene_plots"
-)
+# Visualize the extracted factors
+from mnsf_utility import plot_spatial_factors
+plot_spatial_factors(list_D, results['factors_list'], output_dir="factor_plots")
+
+# Visualize top genes for each factor
+from mnsf_utility import plot_top_genes
+plot_top_genes(results['loadings'], n_top=15, output_dir="gene_plots")
 ```
 
-## 7. Quantifying Spatial Structure with Moran's I
+## 7. Comparing Factors with Ground Truth
 
-Moran's I is a measure of spatial autocorrelation that helps us quantify how structured our factors are spatially:
-
-```python
-# Calculate Moran's I for each factor in each sample (included in post_processing_multisample)
-print("\nQuantifying spatial structure with Moran's I:")
-moran_results = results["moran_results"]
-
-for ksample in range(nsample):
-    print(f"\nSample {ksample+1}:")
-    for factor_result in moran_results[f"sample_{ksample+1}"]:
-        factor_i = factor_result["factor"]
-        morans_i = factor_result["morans_i"]
-        p_value = factor_result["p_value"]
-        print(f"  Factor {factor_i} - Moran's I: {morans_i:.4f}, p-value: {p_value:.4f}")
-```
-
-## 8. Examining Gene Loadings
-
-The gene loadings tell us which genes contribute to each factor:
+Since we're working with simulated data, we can compare our extracted factors with the ground truth:
 
 ```python
-# The loadings are already computed from post_processing_multisample
-print("\nTop genes for each factor:")
-for factor in range(L):
-    # Get top 10 genes for this factor
-    top_indices = loadings.iloc[:, factor].argsort().values[-10:][::-1]
-    top_genes = loadings.index[top_indices].tolist()
-    top_values = loadings.iloc[top_indices, factor].values
+# Function to compare extracted factors with ground truth
+def compare_with_ground_truth(factors_list, true_factors_list, nsample):
+    print("Comparing extracted factors with ground truth:")
     
-    print(f"\nFactor {factor+1} top genes:")
-    for i, (gene, value) in enumerate(zip(top_genes, top_values)):
-        print(f"  {i+1}. {gene}: {value:.4f}")
+    for ksample in range(nsample):
+        # Calculate correlations between extracted and true factors
+        extracted = factors_list[ksample]
+        true = true_factors_list[ksample]
+        
+        corr_matrix = np.zeros((extracted.shape[1], true.shape[1]))
+        
+        for i in range(extracted.shape[1]):
+            for j in range(true.shape[1]):
+                corr = np.corrcoef(extracted[:, i], true[:, j])[0, 1]
+                corr_matrix[i, j] = corr
+        
+        print(f"\nSample {ksample+1} factor correlations:")
+        print(pd.DataFrame(
+            corr_matrix,
+            index=[f"Extracted {i+1}" for i in range(extracted.shape[1])],
+            columns=[f"True {j+1}" for j in range(true.shape[1])]
+        ))
+
+# Load true factors
+true_factors_list = simulated_data['list_factors']
+
+# Compare with extracted factors
+compare_with_ground_truth(results['factors_list'], true_factors_list, nsample)
 ```
 
-## 9. Comparing Factors Across Samples
-
-One of the key advantages of mNSF is its ability to identify common patterns across samples:
-
-```python
-# The factor correlations are already computed from post_processing_multisample
-corr_df = results["factor_correlations"]
-
-print("\nFactor correlations across samples:")
-print(corr_df)
-
-# Visualize the correlation matrix
-plt.figure(figsize=(8, 6))
-plt.imshow(corr_df.values, cmap='coolwarm', vmin=-1, vmax=1)
-plt.colorbar(label='Correlation')
-plt.xticks(range(len(corr_df.columns)), corr_df.columns, rotation=90)
-plt.yticks(range(len(corr_df.index)), corr_df.index)
-plt.title('Cross-sample Factor Correlations')
-plt.tight_layout()
-plt.show()
-```
-
-## 10. Evaluating Model Performance
-
-We can calculate the deviance explained to quantify how well our model fits the data:
-
-```python
-# Calculate deviance explained
-deviance_metrics = process_multiSample.calculate_deviance_explained(
-    list_fit=list_fit,
-    list_D=list_D,
-    list_X=list_X,
-    S=100
-)
-
-print("\nModel performance metrics:")
-for sample, metrics in deviance_metrics.items():
-    print(f"{sample}:")
-    print(f"  Null deviance: {metrics['null_deviance']:.2f}")
-    print(f"  Model deviance: {metrics['model_deviance']:.2f}")
-    print(f"  Deviance explained: {metrics['deviance_explained']:.2%}")
-```
-
-## 11. Parameter Selection Guidance
+## 8. Parameter Selection Guidance
 
 When applying mNSF to your own data, you'll need to decide on several key parameters:
 
 ### Number of Factors (L)
 - Start with a moderate value (5-10) for exploratory analysis
 - For a more rigorous approach, run multiple models with different L values and compare:
-  - Poisson deviance (calculated with `visualize.gof()`)
+  - Poisson deviance (calculated with `calculate_deviance_explained()`)
   - Biological interpretability of the factors
   - Consistency across samples
 
@@ -315,7 +273,43 @@ When applying mNSF to your own data, you'll need to decide on several key parame
 - Complex data: 200-500 epochs recommended
 - Monitor the convergence of the loss function to determine when to stop
 
-## 12. Conclusion
+## 9. Exploring Different Simulation Scenarios
+
+The `mnsf_utility.py` module provides additional functions for generating more complex simulated datasets to explore different scenarios:
+
+```python
+# Generate data with batch effects
+batch_data = create_simulated_dataset_with_batch_effects(
+    n_samples=2,
+    n_spots=100,
+    n_genes=50,
+    n_factors=2,
+    batch_effect_strength=0.5,  # Moderate batch effect
+    output_dir="simulated_data_batch"
+)
+
+# Generate cell type-based data
+# First create cell type signatures
+cell_type_info = simulate_cell_type_signatures(
+    n_cell_types=4,
+    n_genes=50,
+    n_marker_genes=5,
+    output_dir="simulated_data_celltypes"
+)
+
+# Then create spatial patterns of cell types
+celltype_data = simulate_spatial_cell_type_patterns(
+    cell_type_signatures=cell_type_info['signatures'],
+    n_samples=2,
+    n_spots=100,
+    n_factors=2,
+    output_dir="simulated_data_celltypes"
+)
+
+print("Generated additional simulation datasets for exploring different scenarios")
+```
+
+## 10. Conclusion
 
 In this tutorial, we've walked through the complete workflow for using mNSF to analyze multi-sample spatial transcriptomics data:
 
@@ -323,9 +317,9 @@ In this tutorial, we've walked through the complete workflow for using mNSF to a
 2. **Model Setup**: Setting parameters and initializing the model
 3. **Optimization**: Using induced points for computational efficiency
 4. **Training**: Running the model to identify spatial factors
-5. **Visualization**: Creating spatial plots of the identified factors
-6. **Interpretation**: Analyzing gene loadings and factor correlations
-7. **Evaluation**: Quantifying spatial structure with Moran's I
+5. **Post-processing**: Using utility functions to analyze and visualize results
+6. **Validation**: Comparing with ground truth (for simulated data)
+7. **Exploration**: Testing different simulation scenarios
 
 mNSF's key advantage is its ability to identify shared patterns across samples without requiring spatial alignment, making it particularly valuable for complex multi-sample studies.
 
