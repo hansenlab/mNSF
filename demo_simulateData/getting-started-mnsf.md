@@ -196,8 +196,11 @@ mnsf_utility.plot_spatial_factors(list_D, results['factors_list'], output_dir="f
 
 ```
 Sample 1: mNSF factors
+
 <img src="m1.png" alt="Alt text" width="50%">
+
 Sample 2: mNSF factors
+
 <img src="m2.png" alt="Alt text" width="50%">
 
 ## 7. Parameter Selection Guidance
