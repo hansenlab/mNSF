@@ -24,8 +24,48 @@ The computational complexity of mNSF increases significantly with dataset size:
 Before diving into optimization techniques, let's understand the main bottlenecks:
 
 ```python
-# For estimating memory requirements, see large_dataset_optimization.py
-```
+import mNSF
+from mNSF import large_dataset_optimication as ldo
+from mNSF import process_multiSample
+from mNSF.NSF import preprocess, misc, visualize
+from mNSF import training_multiSample
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import tensorflow as tf
+import os
+from os import path
+import time
+import psutil
+import random
+
+# estimate memory requirements
+
+# Example usage
+print("Memory estimates for different dataset sizes:")
+# Memory estimates for different dataset sizes:
+
+print("\nMedium dataset (10k spots, 2k genes, 10 factors, 2 samples):")
+print(ldo.estimate_memory(10000, 2000, 10, 2))
+# Medium dataset (10k spots, 2k genes, 10 factors, 2 samples):
+
+print("\nLarge dataset (50k spots, 5k genes, 15 factors, 3 samples):")
+print(ldo.estimate_memory(50000, 5000, 15, 3))
+# {'data_memory_GB': 0.14901161193847656, 'coordinate_memory_GB': 0.00014901161193847656, 'factor_memory_GB': 0.0014901161193847656, 'loading_memory_GB': 0.00014901161193847656, 'estimated_total_GB': 0.22619962692260742}
+
+print("\nVery large dataset (100k spots, 10k genes, 20 factors, 4 samples):")
+print(ldo.estimate_memory(100000, 10000, 20, 4))
+# {'data_memory_GB': 7.450580596923828, 'coordinate_memory_GB': 0.0014901161193847656, 'factor_memory_GB': 0.059604644775390625, 'loading_memory_GB': 0.0014901161193847656, 'estimated_total_GB': 11.269748210906982}
+
+# Actual memory monitoring function
+def monitor_memory_usage():
+    # Get current process
+    process = psutil.Process(os.getpid())
+    # Return memory usage in GB
+    return process.memory_info().rss / (1024 ** 3)
+
+monitor_memory_usage()
+# 0.7516632080078125
 
 ## 2. Memory Management Techniques
 
@@ -34,7 +74,9 @@ As the size of your dataset grows, memory management becomes increasingly import
 ### 2.1 TensorFlow Memory Optimization
 
 ```python
-# For TensorFlow memory optimization, see large_dataset_optimization.py
+
+# Call this function before running mNSF
+ldo.configure_tensorflow_memory()
 ```
 
 ### 2.1 Memory Monitoring
@@ -42,7 +84,74 @@ As the size of your dataset grows, memory management becomes increasingly import
 It's important to monitor memory usage during mNSF runs, especially for large datasets. Here's a wrapper that can help track memory usage during model training:
 
 ```python
-# For memory monitoring functions, see large_dataset_optimization.py
+def memory_monitored_training(list_fit, pp, list_Dtrain, list_D, num_epochs=500, 
+                              nsample=1, nchunk=1, verbose=True):
+    """
+    Wrapper around mNSF training function that monitors memory usage.
+    
+    Parameters are the same as training_multiSample.train_model_mNSF
+    """
+    # Initial memory usage
+    initial_mem = monitor_memory_usage()
+    print(f"Initial memory usage: {initial_mem:.2f} GB")
+    
+    # Track memory at each epoch
+    memory_usage = []
+    peak_memory = initial_mem
+    
+    # Custom callback function to track memory
+    def memory_callback(epoch, loss):
+        nonlocal peak_memory
+        current_mem = monitor_memory_usage()
+        memory_usage.append(current_mem)
+        peak_memory = max(peak_memory, current_mem)
+        
+        if verbose and epoch % 10 == 0:
+            print(f"Epoch {epoch}: Loss = {loss:.4f}, Memory = {current_mem:.2f} GB")
+    
+    # Start training timer
+    start_time = time.time()
+    
+    # Run the mNSF training function
+    # Note: This assumes the train_model_mNSF function accepts a callback parameter
+    # You may need to modify the actual mNSF code to add this functionality
+    list_fit = training_multiSample.train_model_mNSF(
+        list_fit, pp, list_Dtrain, list_D, 
+        num_epochs=num_epochs, nsample=nsample, nchunk=nchunk,
+        verbose=False  # Turn off default verbose since we have our own callback
+    )
+    
+    # End training timer
+    end_time = time.time()
+    training_time = end_time - start_time
+    
+    # Print summary
+    print("\nTraining complete!")
+    print(f"Total training time: {training_time:.2f} seconds")
+    print(f"Peak memory usage: {peak_memory:.2f} GB")
+    print(f"Memory increase during training: {peak_memory - initial_mem:.2f} GB")
+    
+    # Plot memory usage
+    plt.figure(figsize=(10, 5))
+    plt.plot(range(len(memory_usage)), memory_usage)
+    plt.xlabel('Epoch')
+    plt.ylabel('Memory Usage (GB)')
+    plt.title('Memory Usage During Training')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+    
+    return list_fit, {
+        'training_time': training_time,
+        'peak_memory': peak_memory,
+        'memory_increase': peak_memory - initial_mem,
+        'memory_profile': memory_usage,
+        'final_loss': list_fit[-1]["ELBO_loss"] if len(list_fit) > 0 else None,
+        'epochs_completed': len(list_fit),
+        'samples': nsample,
+        'chunks': nchunk
+    }
+ 
 ```
 
 ## 3. Optimizing Induced Points
@@ -54,7 +163,19 @@ Induced points are a critical optimization in mNSF that reduce the computational
 The number of induced points directly impacts both computational efficiency and model accuracy:
 
 ```python
-# For induced points analysis functions, see large_dataset_optimization.py
+## Example
+# Generate spatial coordinates in a 10x10 grid
+x = np.random.uniform(0, 10, 3000)
+y = np.random.uniform(0, 10, 3000)
+X = np.column_stack((x, y))
+X_df = pd.DataFrame(X, columns=['x', 'y'])
+ldo.induced_points_analysis(X_df, percentages=[0.5, 0.7, 0.85, 1])
+#    percentage  n_induced  time_seconds  memory_delta_GB  matrix_size_GB
+# 0        0.50       1500     16.160952         0.067062        0.033528
+# 1        0.70       2100     22.770177         0.026817        0.046939
+# 2        0.85       2550     27.504231         0.020119        0.056997
+# 3        1.00       3000     32.378558         0.020119        0.067055
+
 ```
 <img src="induced_points_analysis.png" alt="Alt text" width="80%">
 
@@ -63,33 +184,8 @@ The number of induced points directly impacts both computational efficiency and 
 Rather than random selection, strategically choosing induced points can improve model accuracy:
 
 ```python
-# For strategic induced points selection functions, see large_dataset_optimization.py
-```
-<img src="visualize_induced_points.png" alt="Alt text" width="80%">
 
-## 4. Additional Resources
-
-All functions discussed in this document have been moved to a Python module for easier access. To use these optimization techniques, import the module:
-
-```python
-import large_dataset_optimization as ldo
-
-# Estimate memory for your dataset
-memory_estimate = ldo.estimate_memory(50000, 5000, 15, 3)
-print(memory_estimate)
-
-# Configure TensorFlow for optimal memory usage
-ldo.configure_tensorflow_memory()
-
-# Monitor memory during training
-list_fit, memory_stats = ldo.memory_monitored_training(
-    list_fit, pp, list_Dtrain, list_D, 
-    num_epochs=500, nsample=1, nchunk=1
-)
-
-# Analyze and visualize different induced point strategies
-X_df = pd.DataFrame({'x': x_coords, 'y': y_coords})
+# example
 ldo.visualize_induced_points(X_df, percentage=0.15)
 ```
-
-For more information on the mNSF algorithm and implementation details, please refer to the main documentation.
+<img src="visualize_induced_points.png" alt="Alt text" width="80%">
