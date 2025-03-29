@@ -68,11 +68,11 @@ monitor_memory_usage()
 # 0.7516632080078125
 ```
 
-## 2. Memory Management Techniques
+## 1. Memory Management Techniques
 
 As the size of your dataset grows, memory management becomes increasingly important. Here are strategies to minimize memory usage during mNSF analysis:
 
-### 2.1 TensorFlow Memory Optimization
+### 1.1 TensorFlow Memory Optimization
 
 ```python
 
@@ -80,7 +80,7 @@ As the size of your dataset grows, memory management becomes increasingly import
 ldo.configure_tensorflow_memory()
 ```
 
-### 2.1 Memory Monitoring
+### 1.2 Memory Monitoring
 
 It's important to monitor memory usage during mNSF runs, especially for large datasets. Here's a wrapper that can help track memory usage during model training:
 
@@ -292,11 +292,11 @@ if __name__ == "__main__":
 
 ```
 
-## 3. Optimizing Induced Points
+## 2. Optimizing Induced Points
 
 Induced points are a critical optimization in mNSF that reduce the computational complexity of Gaussian processes. Selecting the right number and distribution of induced points is essential for balancing accuracy and performance.
 
-### 3.1 Number of Induced Points
+### 2.1 Number of Induced Points
 
 The number of induced points directly impacts both computational efficiency and model accuracy:
 
@@ -317,7 +317,7 @@ ldo.induced_points_analysis(X_df, percentages=[0.5, 0.7, 0.85, 1])
 ```
 <img src="induced_points_analysis.png" alt="Alt text" width="80%">
 
-### 3.2 Strategic Selection of Induced Points
+### 2.2 Strategic Selection of Induced Points
 
 Rather than random selection, strategically choosing induced points can improve model accuracy:
 
