@@ -13,16 +13,6 @@ As spatial transcriptomics technologies advance, datasets are becoming increasin
 4. Parallel processing implementation
 5. Pre-processing techniques for dimensionality reduction
 
-## 1. Understanding Computational Challenges
-
-The computational complexity of mNSF increases significantly with dataset size:
-
-- Memory usage scales with the number of spots, genes, and factors
-- Computation time increases with the number of spots due to Gaussian Process calculations
-- Multiple samples compound these challenges
-
-Before diving into optimization techniques, let's understand the main bottlenecks:
-
 ```python
 import mNSF
 from mNSF import large_dataset_optimication as ldo
@@ -38,34 +28,6 @@ from os import path
 import time
 import psutil
 import random
-
-# estimate memory requirements
-
-# Example usage
-print("Memory estimates for different dataset sizes:")
-# Memory estimates for different dataset sizes:
-
-print("\nMedium dataset (10k spots, 2k genes, 10 factors, 2 samples):")
-print(ldo.estimate_memory(10000, 2000, 10, 2))
-# Medium dataset (10k spots, 2k genes, 10 factors, 2 samples):
-
-print("\nLarge dataset (50k spots, 5k genes, 15 factors, 3 samples):")
-print(ldo.estimate_memory(50000, 5000, 15, 3))
-# {'data_memory_GB': 0.14901161193847656, 'coordinate_memory_GB': 0.00014901161193847656, 'factor_memory_GB': 0.0014901161193847656, 'loading_memory_GB': 0.00014901161193847656, 'estimated_total_GB': 0.22619962692260742}
-
-print("\nVery large dataset (100k spots, 10k genes, 20 factors, 4 samples):")
-print(ldo.estimate_memory(100000, 10000, 20, 4))
-# {'data_memory_GB': 7.450580596923828, 'coordinate_memory_GB': 0.0014901161193847656, 'factor_memory_GB': 0.059604644775390625, 'loading_memory_GB': 0.0014901161193847656, 'estimated_total_GB': 11.269748210906982}
-
-# Actual memory monitoring function
-def monitor_memory_usage():
-    # Get current process
-    process = psutil.Process(os.getpid())
-    # Return memory usage in GB
-    return process.memory_info().rss / (1024 ** 3)
-
-monitor_memory_usage()
-# 0.7516632080078125
 ```
 
 ## 1. Memory Management Techniques
