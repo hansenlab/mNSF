@@ -151,7 +151,144 @@ def memory_monitored_training(list_fit, pp, list_Dtrain, list_D, num_epochs=500,
         'samples': nsample,
         'chunks': nchunk
     }
- 
+
+import mNSF
+from mNSF import process_multiSample
+from mNSF.NSF import preprocess, misc, visualize
+from mNSF import training_multiSample
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+import time
+import large_dataset_optimization as ldo
+
+# Let's set up a complete example to demonstrate the memory_monitored_training function
+
+def run_mnsf_with_memory_monitoring():
+    """
+    Example of using memory_monitored_training for a spatial transcriptomics dataset
+    """
+    print("Loading spatial transcriptomics data...")
+    
+    # 1. Load your dataset
+    # This is a placeholder - replace with your actual data loading code
+    # For example:
+    # expression_data = pd.read_csv("expression_matrix.csv", index_col=0)
+    # spatial_coords = pd.read_csv("spatial_coordinates.csv", index_col=0)
+    
+    # For demonstration purposes, we'll create synthetic data
+    n_spots = 5000
+    n_genes = 2000
+    n_samples = 2
+    
+    # Create synthetic expression data for two samples
+    list_Y = []
+    list_X = []
+    for i in range(n_samples):
+        # Create synthetic expression matrix (spots x genes)
+        Y = np.random.negative_binomial(5, 0.5, size=(n_spots, n_genes))
+        Y = pd.DataFrame(Y, columns=[f"gene_{j}" for j in range(n_genes)])
+        
+        # Create synthetic spatial coordinates
+        X = pd.DataFrame({
+            'x': np.random.uniform(0, 100, n_spots),
+            'y': np.random.uniform(0, 100, n_spots)
+        })
+        
+        list_Y.append(Y)
+        list_X.append(X)
+    
+    print(f"Created synthetic dataset with {n_spots} spots, {n_genes} genes, and {n_samples} samples")
+    
+    # 2. Configure TensorFlow for memory efficiency
+    ldo.configure_tensorflow_memory()
+    
+    # 3. Estimate memory requirements
+    memory_estimate = ldo.estimate_memory(n_spots, n_genes, n_factors=10, num_samples=n_samples)
+    print("\nEstimated memory requirements:")
+    for key, value in memory_estimate.items():
+        print(f"  {key}: {value:.2f} GB")
+    
+    # 4. Preprocess data
+    print("\nPreprocessing data...")
+    list_Dtrain = []
+    list_D = []
+    
+    for i in range(n_samples):
+        # Normalize and filter data
+        # For demonstration purposes - in real applications, use appropriate preprocessing
+        Y_norm = preprocess.normalize_count(list_Y[i], method='log_cp10k')
+        
+        # Create data dictionaries for mNSF
+        Dtrain = {
+            'Y': Y_norm,
+            'X': list_X[i]
+        }
+        list_Dtrain.append(Dtrain)
+        list_D.append(Dtrain)  # In real scenarios, might be different
+    
+    # 5. Initialize model parameters
+    print("\nInitializing model parameters...")
+    # Number of factors to use in the model
+    n_factors = 10
+    
+    # Initialize model hyperparameters
+    pp = {
+        'n_factors': n_factors,
+        'inducing_point_method': 'kmeans',    # Method for selecting inducing points
+        'n_inducing_points': int(n_spots * 0.1),  # Number of inducing points (10% of spots)
+        'max_kl_weight': 1.0,  # Weight for KL divergence term
+        'learning_rate': 0.01, # Learning rate for optimization
+        'likelihood': 'normal', # Likelihood function
+        'random_seed': 42      # Random seed for reproducibility
+    }
+    
+    # 6. Initialize model fit
+    list_fit = []
+    
+    # 7. Run training with memory monitoring
+    print("\nRunning mNSF training with memory monitoring...")
+    list_fit, memory_stats = ldo.memory_monitored_training(
+        list_fit=list_fit,
+        pp=pp,
+        list_Dtrain=list_Dtrain,
+        list_D=list_D,
+        num_epochs=100,    # Number of training epochs
+        nsample=1,         # Number of samples for stochastic optimization
+        nchunk=1,          # Number of data chunks for mini-batch processing
+        verbose=True       # Print progress information
+    )
+    
+    # 8. Analyze memory usage statistics
+    print("\nMemory usage statistics:")
+    print(f"Training time: {memory_stats['training_time']:.2f} seconds")
+    print(f"Peak memory usage: {memory_stats['peak_memory']:.2f} GB")
+    print(f"Memory increase during training: {memory_stats['memory_increase']:.2f} GB")
+    print(f"Final loss: {memory_stats['final_loss']}")
+    
+    # 9. Plot memory profile over epochs (already done in memory_monitored_training)
+    
+    # 10. Return results
+    return list_fit, memory_stats
+
+# Example usage
+if __name__ == "__main__":
+    # Set random seed for reproducibility
+    np.random.seed(42)
+    
+    # Track total runtime
+    start_time = time.time()
+    
+    # Run the example
+    list_fit, memory_stats = run_mnsf_with_memory_monitoring()
+    
+    # Print total runtime
+    end_time = time.time()
+    print(f"\nTotal runtime: {end_time - start_time:.2f} seconds")
+    
+    # The memory usage plot should have been displayed during execution
+
 ```
 
 ## 3. Optimizing Induced Points
