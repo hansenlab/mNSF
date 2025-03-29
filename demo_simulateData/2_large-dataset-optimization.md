@@ -66,6 +66,7 @@ def monitor_memory_usage():
 
 monitor_memory_usage()
 # 0.7516632080078125
+```
 
 ## 2. Memory Management Techniques
 
