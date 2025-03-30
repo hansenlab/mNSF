@@ -187,6 +187,10 @@ results = mnsf_utility.post_processing_multisample(
     lda_mode=False
 )
 
+# Save the trained model to a file
+with open(os.path.join("mnsf_results_synthetic", "list_fit.pkl"), "wb") as f:
+    pickle.dump(list_fit, f)
+
 # The results contain various outputs:
 # - factors_list: List of factor matrices for each sample
 # - moran_results: Spatial autocorrelation metrics
