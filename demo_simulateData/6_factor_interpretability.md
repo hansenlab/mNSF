@@ -268,6 +268,7 @@ def plot_gene_loading_heatmap(loadings, gene_names, n_top_genes=10, save_path=".
 plot_gene_loading_heatmap(loadings, gene_names)
 
 ```
+<img src="gene_factor_heatmap.png" alt="Alt text" width="50%">
 
 ## 9. Practical Steps for Factor Interpretation
 
