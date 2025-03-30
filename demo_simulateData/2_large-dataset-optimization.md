@@ -48,7 +48,7 @@ ldo.induced_points_analysis(X_df, percentages=[0.5, 0.7, 0.85, 1])
 # 3        1.00       3000     32.378558         0.020119        0.067055
 
 ```
-<img src="induced_points_analysis.png" alt="Alt text" width="80%">
+<img src="fig/induced_points_analysis.png" alt="Alt text" width="80%">
 
 ### 1.2 Strategic Selection of Induced Points
 
@@ -59,4 +59,4 @@ Rather than random selection, strategically choosing induced points can improve 
 # example
 ldo.visualize_induced_points(X_df, percentage=0.15)
 ```
-<img src="visualize_induced_points.png" alt="Alt text" width="80%">
+<img src="fig/visualize_induced_points.png" alt="Alt text" width="80%">
