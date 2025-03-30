@@ -123,7 +123,7 @@ print("Deviance results by number of factors:")
 for L, deviance in deviance_results.items():
     print(f"L={L}: {deviance:.4f}")
 ```
-<img src="factor_selection_deviance.png" alt="Alt text" width="50%">
+<img src="fig/factor_selection_deviance.png" alt="Alt text" width="50%">
 
 
 ## 2. Spatial Autocorrelation Approach: Moran's I
@@ -174,7 +174,7 @@ plt.grid(True)
 plt.savefig("factor_selection_morans_i.png")
 plt.close()
 ```
-<img src="factor_selection_morans_i.png" alt="Alt text" width="50%">
+<img src="fig/factor_selection_morans_i.png" alt="Alt text" width="50%">
 
 ## 3. Elbow Method
 
@@ -199,7 +199,7 @@ plt.grid(True)
 plt.savefig("factor_selection_elbow.png")
 plt.close()
 ```
-<img src="factor_selection_elbow.png" alt="Alt text" width="50%">
+<img src="fig/factor_selection_elbow.png" alt="Alt text" width="50%">
 
 
 ### 4. Practical Guidelines for L Selection
