@@ -1,13 +1,7 @@
-# Parameter Selection Guide for mNSF
+# Effect of Parameter Selection on Memory usage
 
 **Authors:** Yi Wang, Kasper Hansen, and the mNSF Team  
 **Date:** March 2025
-
-## Overview
-
-Selecting appropriate parameters is critical for obtaining meaningful results from mNSF (multi-sample Non-negative Spatial Factorization). This tutorial provides systematic approaches for parameter selection
-
-We'll provide both theoretical guidance and practical examples with interactive code demonstrations to help you make informed decisions for your specific dataset.
 
 ## 1. Understanding mNSF Parameters
 
