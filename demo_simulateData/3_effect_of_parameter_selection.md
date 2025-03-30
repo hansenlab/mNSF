@@ -126,7 +126,7 @@ def visualize_parameter_interactions():
 visualize_parameter_interactions()
 ```
 
-<img src="visualize_parameter_interactions.png" alt="Alt text" width="80%">
+<img src="fig/visualize_parameter_interactions.png" alt="Alt text" width="80%">
 
 
 
