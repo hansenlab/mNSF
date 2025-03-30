@@ -133,6 +133,7 @@ def visualize_parameter_interactions():
 visualize_parameter_interactions()
 ```
 
+<img src="visualize_induced_points.png" alt="Alt text" width="80%">
 
 
 ### 2. Practical Guidelines for L Selection
