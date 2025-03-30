@@ -8,7 +8,7 @@ Tutorial for using mNSF on example datasets are publicly available at [https://g
 
 ### Demo notebooks of mNSF using simulated data
 
-1. **[Getting Started with mNSF](1_getting-started-mnsf(2).md)**
+1. **[Getting Started with mNSF](demo_simulateData/1_getting-started-mnsf.md)**
    - Basic end-to-end workflow using synthetic data
    - Data preparation, model training, and result visualization
    - Parameter selection guidance
