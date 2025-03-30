@@ -13,27 +13,27 @@ Tutorial for using mNSF on example datasets are publicly available at [https://g
    - Data preparation, model training, and result visualization
    - Parameter selection guidance
 
-2. **[Large Dataset Optimization](2_large-dataset-optimization(1).md)**
+2. **[Large Dataset Optimization](demo_simulateData/2_large-dataset-optimization.md)**
    - Techniques for handling large-scale spatial transcriptomics data
    - Optimizing induced points selection
    - Memory and computational efficiency strategies
 
-3. **[Effect of Parameter Selection](3_effect_of_parameter_selection.md)**
+3. **[Effect of Parameter Selection](demo_simulateData/3_effect_of_parameter_selection.md)**
    - In-depth analysis of how different parameters affect mNSF performance
    - Interactive visualizations of parameter interactions
    - Practical guidelines for parameter tuning
 
-4. **[Moran's I Tutorial](4_Morans_I_tutorial.md)**
+4. **[Moran's I Tutorial](demo_simulateData/4_Morans_I_tutorial.md)**
    - Understanding spatial autocorrelation in mNSF factors
    - Calculating and interpreting Moran's I statistics
    - Visualizing different levels of spatial structure
 
-5. **[Number of Factors Selection](5_number_of_factors_selection(1).md)**
+5. **[Number of Factors Selection](demo_simulateData/5_number_of_factors_selection.md)**
    - Statistical approaches for determining optimal factor count
    - Using deviance explained and elbow methods
    - Practical guidelines for different dataset complexities
 
-6. **[Factor Interpretability Guide](6_factor_interpretability(1).md)**
+6. **[Factor Interpretability Guide](demo_simulateData/6_factor_interpretability.md)**
    - Connecting mNSF factors to biological meaning
    - Techniques for visualizing gene-factor relationships
    - Step-by-step interpretation framework
