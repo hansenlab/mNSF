@@ -136,22 +136,4 @@ visualize_parameter_interactions()
 <img src="visualize_parameter_interactions.png" alt="Alt text" width="80%">
 
 
-### 2. Practical Guidelines for L Selection
-
-Based on the approaches above, here are practical guidelines for selecting L:
-
-1. **For exploratory analysis**: Start with a moderate value (L=4 to 8)
-2. **For statistical robustness**: Use cross-validation with Poisson deviance
-3. **For interpretability**: Examine spatial patterns and gene loadings
-4. **For computational efficiency**: Consider resource constraints
-
-| Dataset Complexity | Recommended L Range | Selection Approach |
-|--------------------|---------------------|-------------------|
-| Low (few cell types) | 2-6 | Visualization + Moran's I |
-| Medium | 6-12 | Goodness-of-fit + Interpretability |
-| High (many cell types) | 12-20+ | Cross-validation + Domain knowledge |
-
-Remember that there's no single "correct" value of L - it depends on your biological question and dataset complexity.
-
-
 
