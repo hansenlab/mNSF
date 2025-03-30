@@ -3,8 +3,40 @@ This GitHub repository is associated with our paper available on bioRxiv: [https
 
 All code to analyze the data and generate figures is available at [https://github.com/hansenlab/mNSF_paper](https://github.com/hansenlab/mNSF_paper)
 
- Tutorials for using mNSF are publicly available at [https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-dlpfc.md](https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-dlpfc.md) (use DLPFC data as example) and [https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-mouse.md](https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-mouse.md) (use mouse saggital section data as example).
+Tutorial for using mNSF on example datasets are publicly available at [https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-dlpfc.md](https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-dlpfc.md) (use DLPFC data as example) and [https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-mouse.md](https://github.com/hansenlab/mNSF/blob/main/tutorial/mnsf-tutorial-mouse.md) (use mouse saggital section data as example).
 
+
+### Demo notebooks of mNSF using simulated data
+
+1. **[Getting Started with mNSF](1_getting-started-mnsf(2).md)**
+   - Basic end-to-end workflow using synthetic data
+   - Data preparation, model training, and result visualization
+   - Parameter selection guidance
+
+2. **[Large Dataset Optimization](2_large-dataset-optimization(1).md)**
+   - Techniques for handling large-scale spatial transcriptomics data
+   - Optimizing induced points selection
+   - Memory and computational efficiency strategies
+
+3. **[Effect of Parameter Selection](3_effect_of_parameter_selection.md)**
+   - In-depth analysis of how different parameters affect mNSF performance
+   - Interactive visualizations of parameter interactions
+   - Practical guidelines for parameter tuning
+
+4. **[Moran's I Tutorial](4_Morans_I_tutorial.md)**
+   - Understanding spatial autocorrelation in mNSF factors
+   - Calculating and interpreting Moran's I statistics
+   - Visualizing different levels of spatial structure
+
+5. **[Number of Factors Selection](5_number_of_factors_selection(1).md)**
+   - Statistical approaches for determining optimal factor count
+   - Using deviance explained and elbow methods
+   - Practical guidelines for different dataset complexities
+
+6. **[Factor Interpretability Guide](6_factor_interpretability(1).md)**
+   - Connecting mNSF factors to biological meaning
+   - Techniques for visualizing gene-factor relationships
+   - Step-by-step interpretation framework
 
 ## Installation
 
