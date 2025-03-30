@@ -5,13 +5,8 @@
 
 ## Overview
 
-As spatial transcriptomics technologies advance, datasets are becoming increasingly large, with some experiments containing tens of thousands of spots and thousands of genes across multiple samples. Running mNSF on such datasets can be challenging due to memory limitations and computational complexity. This tutorial provides practical strategies for optimizing mNSF for large datasets, with particular emphasis on:
+As spatial transcriptomics technologies advance, datasets are becoming increasingly large, with some experiments containing tens of thousands of spots and thousands of genes across multiple samples. Running mNSF on such datasets can be challenging due to memory limitations and computational complexity. This tutorial provides practical strategies for optimizing mNSF for large datasets, with particular emphasis on optimal selection of induced points.
 
-1. Efficient data chunking strategies
-2. Optimal selection of induced points
-3. Memory profiling and management
-4. Parallel processing implementation
-5. Pre-processing techniques for dimensionality reduction
 
 ```python
 import mNSF
