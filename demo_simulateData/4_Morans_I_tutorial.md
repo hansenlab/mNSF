@@ -175,9 +175,9 @@ fig, I, p_value = plot_factor_with_morans_i(
 plt.savefig("morans_i_random.png", dpi=300, bbox_inches='tight')
 plt.show()
 ```
-<img src="morans_i_factor1.png" alt="Alt text" width="50%">
-<img src="morans_i_factor2.png" alt="Alt text" width="50%">
-<img src="morans_i_random.png" alt="Alt text" width="50%">
+<img src="fig/morans_i_factor1.png" alt="Alt text" width="50%">
+<img src="fig/morans_i_factor2.png" alt="Alt text" width="50%">
+<img src="fig/morans_i_random.png" alt="Alt text" width="50%">
 
 ## 6. Moran's I with mNSF Analysis
 
@@ -262,8 +262,8 @@ for i in range(learned_factors[ksample].shape[1]):
     plt.savefig(f"morans_i_learned_factor{i+1}.png", dpi=300, bbox_inches='tight')
     plt.show()
 ```
-<img src="morans_i_learned_factor1_s1.png" alt="Alt text" width="50%">
-<img src="morans_i_learned_factor1_s2.png" alt="Alt text" width="50%">
+<img src="fig/morans_i_learned_factor1_s1.png" alt="Alt text" width="50%">
+<img src="fig/morans_i_learned_factor1_s2.png" alt="Alt text" width="50%">
 
 Expected output might look like:
 
