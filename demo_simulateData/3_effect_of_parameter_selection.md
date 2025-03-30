@@ -1,5 +1,4 @@
-# Effect of Parameter Selection on Memory usage
-
+# Effect of Parameter Selection 
 **Authors:** Yi Wang, Kasper Hansen, and the mNSF Team  
 **Date:** March 2025
 
