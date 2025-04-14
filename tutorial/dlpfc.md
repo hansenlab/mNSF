@@ -312,8 +312,8 @@ First, let's implement both optimization techniques:
 list_D_chunked=list()
 list_X_chunked=list()
 for ksample in range(0,nsample):
-	Y=pd.read_csv(path.join('//dcs04/hansen/data/ywang/ST/DLPFC/processed_Data//Y_features_sele_sample'+str(ksample*4+1)+'_500genes.csv'))
-	X=pd.read_csv(path.join('//dcs04/hansen/data/ywang/ST/DLPFC/processed_Data///X_allSpots_sample'+str(ksample*4+1)+'.csv'))
+	Y=pd.read_csv(path.join('/Counts_sample'+str(ksample*4+1)+'.csv'))
+	X=pd.read_csv(path.join('/Positions_sample'+str(ksample*4+1)+'.csv'))
 	list_D_sampleTmp,list_X_sampleTmp, chunk_mapping = process_multiSample.get_chunked_data(X.iloc[:,:],Y.iloc[:,:],nchunk,method = "random") #choose method = "balanced_kmeans" for chunking the spots based on the spatial coordinates
 	list_D = list_D + list_D_sampleTmp
 	list_X = list_X + list_X_sampleTmp
