@@ -171,7 +171,10 @@ These directories will be used to save the results of your analysis, including t
 
 ### 5.1 Loading and Processing Data
 
+The DLPFC data could be downloaded and processed via "SpatialExperiment" package. See full tutorial for loading the data, quality control, and description of this dataset on this website: https://lmweber.org/OSTA/pages/seq-workflow-dlpfc.html
+
 mNSF requires your data to be in a specific format. Here's a detailed explanation of how to load and process your data:
+
 
 ```python
 list_D = []
