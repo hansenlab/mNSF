@@ -316,8 +316,8 @@ list_D=list()
 list_X=list()
 list_chunk_mapping = list()
 for ksample in range(0,nsample):
-	Y=pd.read_csv(path.join('/Counts_sample'+str(ksample+1)+'.csv'))
-	X=pd.read_csv(path.join('/Positions_sample'+str(ksample+1)+'.csv'))
+	Y=pd.read_csv(f'path/to/Y_sample{ksample+1}.csv')
+	X=pd.read_csv(f'path/to/X_sample{ksample+1}.csv')
 	list_D_sampleTmp,list_X_sampleTmp, chunk_mapping = process_multiSample.get_chunked_data(X.iloc[:,:],Y.iloc[:,:],nchunk,method = "random") # choose method="balanced_kmeans“ for data chunking based on spatial coordinates
 	list_D = list_D + list_D_sampleTmp
 	list_X = list_X + list_X_sampleTmp
