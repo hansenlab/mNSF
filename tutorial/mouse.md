@@ -174,9 +174,13 @@ These directories will be used to save the results of your analysis, including t
 
 ### 5.1 Loading and Processing Data
 To get the data, download the gene expression counts matrix and coordinates matrix for each sample of mouse sagittal section at 10X Genomics website:
+
 First sample of anterior part: https://www.10xgenomics.com/datasets/mouse-brain-serial-section-1-sagittal-anterior-1-standard-1-0-0 
+
 Second sample of anterior part: https://www.10xgenomics.com/datasets/mouse-brain-serial-section-2-sagittal-anterior-1-standard-1-0-0
+
 First sample of posterior part: https://www.10xgenomics.com/datasets/mouse-brain-serial-section-1-sagittal-posterior-1-standard-1-0-0
+
 Second sample of posterior part: https://www.10xgenomics.com/datasets/mouse-brain-serial-section-2-sagittal-posterior-1-standard-1-0-0
 
 The implementation includes data chunking at the loading stage. Here's how to load and process your data:
